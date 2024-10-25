@@ -17,8 +17,8 @@ void setup() {
 }
 void loop() {
     digitalWrite(PINA, LOW); //ir emitter
-    digitalWrite(PINB, HIGH);
-    int distance = getDistFromIR(analogRead(1));
+    digitalWrite(PINB, LOW);
+    int distance = analogRead(1);
     Serial.println(distance);
 }
 
