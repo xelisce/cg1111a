@@ -7,7 +7,7 @@
 #define LDR 0   //LDR sensor pin at A0
 //#define LED 13  //Check Indicator to signal Calibration Completed
 
-// Define colour sensor LED pins
+// Define colour sensor LED pin
 //int ledArray[] = {2,3,4};
 
 //placeholders for colour detected
