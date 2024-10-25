@@ -6,23 +6,24 @@
 void setup() {
  Serial.begin(9600); // to initialize the serial monitor
 }
-void loop() {
- pinMode(ULTRASONIC, OUTPUT);
- digitalWrite(ULTRASONIC, LOW);
- delayMicroseconds(2);
- digitalWrite(ULTRASONIC, HIGH);
- delayMicroseconds(10); 
- digitalWrite(ULTRASONIC, LOW);
 
- pinMode(ULTRASONIC, INPUT);
- long duration = pulseIn(ULTRASONIC, HIGH, TIMEOUT);
- if (duration > 0) {
- Serial.print("distance(cm) = ");
- float distance = (duration / 2.0 / 1000000 * SPEED_OF_SOUND * 100) - 4.5; // 4.5 is the distance from ultrasonic to robot side
- Serial.println(distance);
- }
- else {
- Serial.println("out of range");
- }
- delay(10);
+void loop() {
+    pinMode(ULTRASONIC, OUTPUT);
+    digitalWrite(ULTRASONIC, LOW);
+    delayMicroseconds(2);
+    digitalWrite(ULTRASONIC, HIGH);
+    delayMicroseconds(10); 
+    digitalWrite(ULTRASONIC, LOW);
+
+    pinMode(ULTRASONIC, INPUT);
+    long duration = pulseIn(ULTRASONIC, HIGH, TIMEOUT);
+    if (duration > 0) {
+    Serial.print("distance(cm) = ");
+    float distance = (duration / 2.0 / 1000000 * SPEED_OF_SOUND * 100) - 4.5; // 4.5 is the distance from ultrasonic to robot side
+    Serial.println(distance);
+    }
+    else {
+    Serial.println("out of range");
+    }
+    delay(10);
 }

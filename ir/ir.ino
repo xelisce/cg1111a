@@ -1,12 +1,27 @@
+#define IRLOWREADING 0
+#define IRHIGHREADING 1000
+#define IRLOWDIST 0 //mm
+#define IRHIGHDIST 100 //mm
+
+// define pins!
+#define IRPININ A1
+#define PINA 2
+#define PINB 3
+
+double getDistFromIR(int val);
+
 void setup() {
-    pinMode(1, INPUT);
-    pinMode(2, INPUT);
-    pinMode(3, INPUT);
+    pinMode(PINA, OUTPUT);
+    pinMode(PINB, OUTPUT);
     Serial.begin(9600);
 }
 void loop() {
-    digitalWrite(2, LOW);
-    digitalWrite(3, HIGH);
-    int distance = analogRead(1);
+    digitalWrite(PINA, LOW); //ir emitter
+    digitalWrite(PINB, HIGH);
+    int distance = getDistFromIR(analogRead(1));
     Serial.println(distance);
+}
+
+double getDistFromIR(int val) {
+    return (val*(IRHIGHDIST-IRLOWDIST))/(IRHIGHREADING-IRLOWREADING)+IRLOWDIST;
 }
