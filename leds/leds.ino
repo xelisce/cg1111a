@@ -9,6 +9,48 @@
 
 // Define colour sensor LED pin
 //int ledArray[] = {2,3,4};
+struct hsv_type
+{
+  double h;
+  double s;
+  double v;
+} ;
+void hsv_converter(struct hsv_type* hsv, double r, double g, double b)
+{
+  r /= 255;
+  b /= 255;
+  g /= 255;
+  double cmax = max(r, max(g, b));
+  double cmin = min(r, min(g, b));
+  double diff = cmax-cmin;
+  hsv->h = -1;
+  hsv->s = -1;
+  if (cmax == cmin)
+  {
+    hsv->h = 0;
+  }
+  else if (cmax == r)
+  {
+    hsv->h = fmod(60*((g-b)/diff)+360, 360);
+  }
+  else if (cmax == g)
+  {
+    hsv->h = fmod(60*((b-r)/diff)+120, 360);
+  }
+  else if (cmax == b)
+  {
+    hsv->h = fmod(60*((r-g)/diff)+240, 360);
+  }
+  if (cmax == 0)
+  {
+    hsv->s = 0;
+  }
+  else
+  {
+    hsv->s = (diff/cmax)*100;
+  }
+  hsv->v = cmax*100;
+}
 
 //placeholders for colour detected
 int red = 0;
@@ -30,6 +72,7 @@ void setup(){
   }*/
   pinMode(A2, OUTPUT);
   pinMode(A3, OUTPUT);
+
   //pinMode(LED,OUTPUT);   //Check Indicator -- OFF during Calibration
 
   //begin serial communication
@@ -38,7 +81,7 @@ void setup(){
   setBalance();  //calibration
   //digitalWrite(LED, HIGH); //Check Indicator -- ON after Calibration
 }
-
+hsv_type hsv;
 void loop(){
 //turn on one colour at a time and LDR reads 5 times
   /*for(int c = 0;c<=2;c++){    
@@ -58,7 +101,7 @@ void loop(){
   digitalWrite(A3, LOW);
   delay(RGBWait);
   colourArray[0] = getAvgReading(5);
-  colourArray[0] = (colourArray[0] - blackArray[0])/(greyDiff[0])*255;
+  colourArray[0] = ((colourArray[0] - blackArray[0])/(greyDiff[0]))*255;
   digitalWrite(A2, LOW);
   digitalWrite(A3, LOW);
   delay(RGBWait);
@@ -68,7 +111,7 @@ void loop(){
   digitalWrite(A3, HIGH);
   delay(RGBWait);
   colourArray[1] = getAvgReading(5);
-  colourArray[1] = (colourArray[1] - blackArray[1])/(greyDiff[1])*255;
+  colourArray[1] = ((colourArray[1] - blackArray[1])/(greyDiff[1]))*255;
   digitalWrite(A2, LOW);
   digitalWrite(A3, LOW);
   delay(RGBWait);
@@ -78,11 +121,16 @@ void loop(){
   digitalWrite(A3, HIGH);
   delay(RGBWait);
   colourArray[2] = getAvgReading(5);
-  colourArray[2] = (colourArray[2] - blackArray[2])/(greyDiff[2])*255;
+  colourArray[2] = ((colourArray[2] - blackArray[2])/(greyDiff[2]))*255;
   digitalWrite(A2, LOW);
   digitalWrite(A3, LOW);
   delay(RGBWait);
   Serial.println(int(colourArray[2]));
+
+  hsv_converter(&hsv, colourArray[0], colourArray[1], colourArray[2]);
+  Serial.println(hsv.h);
+  Serial.println(hsv.s);
+  Serial.println(hsv.v);
 }
 
 
