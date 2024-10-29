@@ -10,6 +10,10 @@
 #define IR_LOW_DIST 0 //mm
 #define IR_HIGH_DIST 100 //mm
 #define ULTRASONIC_READING_INTERVAL 10 // millis
+#define RGBWait 200 //in milliseconds 
+#define LDRWait 10 //in milliseconds 
+
+#define LDR 0   //LDR sensor pin at A0
 
 // pins!
 #define ULTRASONIC 12
@@ -25,26 +29,38 @@ MeDCMotor rightMotor(M2);
 uint8_t motorSpeed = 255;
 
 enum MovementTypes {
-  WALLTRACK,
-  LEFT_TURN,
-  LEFT_U_TURN,
-  RIGHT_TURN,
-  RIGHT_U_TURN,
-  ON_THE_SPOT_U_TURN,
-  COLOR_SENSE,
-  STOP
+  WALLTRACK, // 0
+  LEFT_TURN, // 1
+  LEFT_U_TURN, // 2
+  RIGHT_TURN, // 3
+  RIGHT_U_TURN, // 4
+  ON_THE_SPOT_U_TURN, // 5
+  COLOR_SENSE, // 6
+  STOP // 7
 };
 
 enum MovementTypes movement = WALLTRACK; //default setting where it is moving forward with walltracking CHANGEDD!!
 
-enum Color {
-  RED, GREEN, ORANGE, PINK, LIGHT_BLUE, WHITE,
-};
 int current_Color[3] = {0, 0, 0};
 
 bool is_at_line(){
+  Serial.print("Checking if at line");
+  delay(2000);
   int sensor_state = lineFinder.readSensors();
-  return sensor_state == S1_IN_S2_IN; //There are four possible cases but this function should only return true given that BOTH sensors are on the line
+  if (sensor_state == S1_IN_S2_IN) {
+    for (int i = 0; i < 3; i++)
+    {
+      sensor_state = lineFinder.readSensors();
+      if (sensor_state == S1_IN_S2_IN) {
+        Serial.println("DOUBLE BLACK");
+        delay(500);
+      } else {
+        return false;
+      }
+    }
+    return true;
+    
+  }; //There are four possible cases but this function should only return true given that BOTH sensors are on the line
 } 
 
 // function headers!
@@ -52,6 +68,7 @@ void differentialSteer(MeDCMotor *leftMotor, MeDCMotor *rightMotor, double motor
 void transmitUltrasonic();
 float receiveUltrasonic();
 double receiveIR();
+void setBalance();
 
 // variables!
 double rotation = 0;
@@ -115,7 +132,8 @@ int blue = 0;
 float colourArray[] = {0,0,0};
 float whiteArray[] = {0,0,0};
 float blackArray[] = {0,0,0};
-float greyDiff[] = {0,0,0};
+float greyDiff[] = {53,48,7};
+
 
 char colourStr[3][5] = {"R = ", "G = ", "B = "};
 
@@ -126,16 +144,23 @@ void setup() {
   pinMode(PIN_A, OUTPUT);
   pinMode(PIN_B, OUTPUT);
   Serial.begin(9600); 
-  setBalance();
+  // setBalance();
 }
 
 hsv_type hsv;
+void read_color();
+double receiveIR();
+float receiveUltrasonic();
+void differentialSteer(MeDCMotor *leftMotor, MeDCMotor *rightMotor, double motorSpeed, double rotation);
+void transmitUltrasonic();
 
 void loop() {
+  Serial.print("Before loop: ");
+  Serial.println(movement);
   switch (movement)
   {
-
   case WALLTRACK:
+    Serial.println("WALLTRACKING");
     // ultrasonic code (10 between each reading) //TODO optimise
     if (millis() - lastReadUltrasonic > ULTRASONIC_READING_INTERVAL) {
       transmitUltrasonic();
@@ -152,9 +177,12 @@ void loop() {
     double right = receiveIR(); //in cm
     // calculate differential steer needed
     double rotation = (left == -1 || right == -1) ? ((left - right) * kp) : 0; //if out of bounds, just go straight
-    differentialSteer(&leftMotor, &rightMotor, motorSpeed, rotation);
-    //TODO get line follower values
-    //TODO change case according to color
+    // differentialSteer(&leftMotor, &rightMotor, motorSpeed, rotation);
+    differentialSteer(&leftMotor, &rightMotor, motorSpeed, 0);
+    if (is_at_line()){
+      stop_moving();
+      movement = COLOR_SENSE;
+    }
     #if PRINT
       Serial.print("Left: ");
       Serial.print(left);
@@ -198,16 +226,45 @@ void loop() {
     break;
   
   case ON_THE_SPOT_U_TURN:
+    Serial.println("STUCK");
     differentialSteer(&leftMotor, &rightMotor, motorSpeed, -1);
     delay(2000);
     movement = WALLTRACK;
     break;
 
   case COLOR_SENSE:
-    
+    Serial.println("Sensing color");
+    read_color();//Use the loop in led.ino to make it sense the colour
+    if ((hsv.h > 350 || hsv.h < 10) && hsv.s < 50) {Serial.println("PINK");
+    movement = LEFT_U_TURN;}
+    else if ((hsv.h > 350 || hsv.h < 10) && hsv.s > 50) {Serial.println("RED");
+    movement = LEFT_TURN;}
+    else if (hsv.h > 150 || hsv.h < 170) {
+      Serial.println("GREEN");
+      movement = RIGHT_TURN;
+    }
+    else if (hsv.h > 200 || hsv.h < 250) {
+      Serial.println("BLUE");
+      movement = RIGHT_U_TURN;}
+    else if (hsv.h > 10 || hsv.h < 40) {Serial.println("ORANGE");
+      movement = ON_THE_SPOT_U_TURN;}
+    else if (hsv.s < 30) {
+      Serial.print("WHITE");
+      movement = STOP;
+    } else {
+      Serial.print("UNKNOWN");
+      movement = WALLTRACK;
+    }
+    Serial.print(hsv.h);
+    Serial.print("  ");
+    Serial.print(hsv.s);
+    Serial.print("  ");
+    Serial.print(hsv.v);
+    Serial.print("  ");
     break;
 
   case STOP:
+    Serial.println("STOPPED");
     leftMotor.stop();
     rightMotor.stop();
     while (1)
@@ -217,6 +274,7 @@ void loop() {
     break;
   
   default:
+    Serial.print("ERROR");
     break;
   }
 
@@ -225,41 +283,6 @@ void loop() {
     Serial.println(movement);
   #endif
 
-
-  //Edits for the motion
-  if (movement == WALLTRACK && is_at_line()){
-    stop_moving();
-    movement = COLOR_SENSE;
-  }
-  if (movement == COLOR_SENSE){
-    read_color();//Use the loop in led.ino to make it sense the colour
-    int color_predict = match_color();
-    /*RED, ORANGE, PINK: R > 200  
-          ORANGE: G > 100 && B < 100
-          RED: G < 100 && B < 100
-          PINK: G > 150 && B < 200
-      GREEN: G > 200
-      BLUE: B > 200
-    */
-    if (color_predict == RED){ //CHANGEDD all the names to movement!!
-      movement = LEFT_TURN;
-    }
-    else if (color_predict == GREEN){
-      movement = RIGHT_TURN;
-    }
-    else if (color_predict == LIGHT_BLUE){
-      movement = RIGHT_U_TURN;
-    }
-    else if (color_predict == ORANGE){
-      movement = U_TURN;
-    }
-    else if (color_predict == PINK){
-      movement = LEFT_U_TURN;
-    }
-    else{
-      movement = STOP;
-    }
-    delay(10);
 }
 
 void read_color() {
@@ -293,7 +316,95 @@ void read_color() {
   digitalWrite(A3, LOW);
   delay(RGBWait);
   Serial.println(int(colourArray[2]));
+
+  hsv_converter(&hsv, colourArray[0], colourArray[1], colourArray[2]);
+  Serial.println(hsv.h);
+  Serial.println(hsv.s);
+  Serial.println(hsv.v);
 }
+
+
+void setBalance(){
+//set white balance
+  Serial.println("Put White Sample For Calibration ...");
+  delay(5000);           //delay for five seconds for getting sample ready
+  //digitalWrite(LED,LOW); //Check Indicator OFF during Calibration
+//scan the white sample.
+//go through one colour at a time, set the maximum reading for each colour -- red, green and blue to the white array
+  digitalWrite(A2, HIGH); //on red light
+  digitalWrite(A3, LOW);
+  delay(RGBWait);
+  whiteArray[0] = getAvgReading(5);
+  digitalWrite(A2, LOW);
+  digitalWrite(A3, LOW);
+  delay(RGBWait);
+  digitalWrite(A2, LOW); //on green light
+  digitalWrite(A3, HIGH);
+  delay(RGBWait);
+  whiteArray[1] = getAvgReading(5);
+  digitalWrite(A2, LOW);
+  digitalWrite(A3, LOW);
+  delay(RGBWait);
+  digitalWrite(A2, HIGH); // on blue light
+  digitalWrite(A3, HIGH);
+  delay(RGBWait);
+  whiteArray[2] = getAvgReading(5);
+  digitalWrite(A2, LOW);
+  digitalWrite(A3, LOW);
+  delay(RGBWait);
+
+
+
+  /*for(int i = 0;i<=2;i++){ // replaced by lines 96 to 116
+     digitalWrite(ledArray[i],HIGH);
+     delay(RGBWait);
+     whiteArray[i] = getAvgReading(5);         //scan 5 times and return the average, 
+     digitalWrite(ledArray[i],LOW);
+     delay(RGBWait);
+  }*/
+//done scanning white, time for the black sample.
+//set black balance
+  Serial.println("Put Black Sample For Calibration ...");
+  delay(5000);     //delay for five seconds for getting sample ready 
+//go through one colour at a time, set the minimum reading for red, green and blue to the black array
+  digitalWrite(A2, HIGH); //on red light
+  digitalWrite(A3, LOW);
+  delay(RGBWait);
+  blackArray[0] = getAvgReading(5);
+  digitalWrite(A2, LOW);
+  digitalWrite(A3, LOW);
+  delay(RGBWait);
+  digitalWrite(A2, LOW); //on green light
+  digitalWrite(A3, HIGH);
+  delay(RGBWait);
+  blackArray[1] = getAvgReading(5);
+  digitalWrite(A2, LOW);
+  digitalWrite(A3, LOW);
+  delay(RGBWait);
+  digitalWrite(A2, HIGH); // on blue light
+  digitalWrite(A3, HIGH);
+  delay(RGBWait);
+  blackArray[2] = getAvgReading(5);
+  digitalWrite(A2, LOW);
+  digitalWrite(A3, LOW);
+  delay(RGBWait);
+  for(int i = 0;i<=2;i++){
+     /*digitalWrite(ledArray[i],HIGH);
+     delay(RGBWait);
+     blackArray[i] = getAvgReading(5);
+     digitalWrite(ledArray[i],LOW);
+     delay(RGBWait);*/
+//the differnce between the maximum and the minimum gives the range
+     greyDiff[i] = whiteArray[i] - blackArray[i];
+     
+     Serial.println(int(greyDiff[i]));
+  }
+
+//delay another 5 seconds for getting ready colour objects
+  Serial.println("Colour Sensor Is Ready.");
+  delay(5000);
+  }
+
 
 void transmitUltrasonic() {
   digitalWrite(ULTRASONIC, LOW);
@@ -306,10 +417,10 @@ void transmitUltrasonic() {
 void differentialSteer(MeDCMotor *leftMotor, MeDCMotor *rightMotor, double motorSpeed, double rotation) {
   double slower = 1-2*fabs(rotation);
   if (rotation < 0) { //left
-    leftMotor ->run(motorSpeed);
+    leftMotor->run(-motorSpeed);
     rightMotor->run(motorSpeed * slower);
   } else {
-    leftMotor->run(motorSpeed * slower);
+    leftMotor->run(-motorSpeed * slower);
     rightMotor->run(motorSpeed);
   }
 }
@@ -333,5 +444,21 @@ float receiveUltrasonic() { // in cm
 }
 
 double receiveIR() {
-  return (val*(IR_HIGH_DIST-IR_LOW_DIST))/(IR_HIGH_READING-IR_LOW_READING)+IR_LOW_DIST;
+  // return (val*(IR_HIGH_DIST-IR_LOW_DIST))/(IR_HIGH_READING-IR_LOW_READING)+IR_LOW_DIST;
+  return 0;
+  //TODO
+}
+
+int getAvgReading(int times){      
+//find the average reading for the requested number of times of scanning LDR
+  int reading;
+  int total =0;
+//take the reading as many times as requested and add them up
+  for(int i = 0;i < times;i++){
+     reading = analogRead(LDR);
+     total = reading + total;
+     delay(LDRWait);
+  }
+//calculate the average and return it
+  return total/times;
 }
