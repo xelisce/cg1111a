@@ -128,8 +128,11 @@ void loop(){
   Serial.println(int(colourArray[2]));
 
   hsv_converter(&hsv, colourArray[0], colourArray[1], colourArray[2]);
-  Serial.println(hsv.h);
-  Serial.println(hsv.s);
+  Serial.print("H: ");
+  Serial.print(hsv.h);
+  Serial.print("  S: ");
+  Serial.print(hsv.s);
+  Serial.print("  V: ");
   Serial.println(hsv.v);
 }
 
@@ -163,15 +166,11 @@ void setBalance(){
   digitalWrite(A3, LOW);
   delay(RGBWait);
 
-
-
-  /*for(int i = 0;i<=2;i++){ // replaced by lines 96 to 116
-     digitalWrite(ledArray[i],HIGH);
-     delay(RGBWait);
-     whiteArray[i] = getAvgReading(5);         //scan 5 times and return the average, 
-     digitalWrite(ledArray[i],LOW);
-     delay(RGBWait);
-  }*/
+  for(int i = 0;i<=2;i++){
+    Serial.print(colourStr[i]);
+    Serial.print(whiteArray[i]);
+  }
+  Serial.println();
 //done scanning white, time for the black sample.
 //set black balance
   Serial.println("Put Black Sample For Calibration ...");
@@ -199,14 +198,13 @@ void setBalance(){
   digitalWrite(A3, LOW);
   delay(RGBWait);
   for(int i = 0;i<=2;i++){
-     /*digitalWrite(ledArray[i],HIGH);
-     delay(RGBWait);
-     blackArray[i] = getAvgReading(5);
-     digitalWrite(ledArray[i],LOW);
-     delay(RGBWait);*/
-//the differnce between the maximum and the minimum gives the range
+    Serial.print(colourStr[i]);
+    Serial.print(blackArray[i]);
+  }
+  Serial.println();
+  Serial.println("Computing grey...");
+  for(int i = 0;i<=2;i++){
      greyDiff[i] = whiteArray[i] - blackArray[i];
-     
      Serial.println(int(greyDiff[i]));
   }
 
