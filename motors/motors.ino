@@ -8,7 +8,7 @@ uint8_t motorSpeed = 255;
 void turnLeftBlocking(MeDCMotor *leftMotor, MeDCMotor *rightMotor) {
   rightMotor->run(motorSpeed);
   leftMotor->run(motorSpeed);
-  delay(330);
+  delay(375);
 }
 
 void turnLeftUTurnBlocking(MeDCMotor *leftMotor, MeDCMotor *rightMotor) {
@@ -42,5 +42,7 @@ void setup()
 }
 void loop()
 {
-  
+ turnLeftBlocking(&leftMotor, &rightMotor); 
+ stopMotors(&leftMotor, &rightMotor);
+ delay(1000);
 }
