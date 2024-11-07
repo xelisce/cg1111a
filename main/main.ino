@@ -23,6 +23,7 @@
 MeLineFollower lineFinder(PORT_2); // assigning lineFinder to RJ25 port 2
 MeDCMotor leftMotor(M1); // assigning leftMotor to port M1
 MeDCMotor rightMotor(M2);
+//MeBuzzer buzzer; //Defining the buzzer for colour testing
 uint8_t motorSpeed = 255;
 
 enum MovementTypes {
