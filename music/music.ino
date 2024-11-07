@@ -95,18 +95,34 @@ MeBuzzer buzzer;  // Define the mBot buzzer
 #define NOTE_DS8 4978
 
 // Melody and note durations (same as before)
-int melody[] = {
+// Random Song - Test
+/*int melody[] = {
   NOTE_D5, NOTE_D5, NOTE_A4, NOTE_D5, NOTE_A4, NOTE_D5, NOTE_G4, NOTE_A4,
   NOTE_D5, NOTE_D5, NOTE_A4, NOTE_D5, NOTE_A4, NOTE_D5, NOTE_G4, NOTE_A4,
   NOTE_F5, NOTE_F5, NOTE_F5, NOTE_G5, NOTE_A5, NOTE_A5, NOTE_A5, NOTE_B5,
   NOTE_D6, NOTE_D6, NOTE_A5, NOTE_B5, NOTE_A5, NOTE_F5, NOTE_E5, NOTE_D5,
-};
+};*/
 
-int noteDurations[] = {
+/*int noteDurations[] = {
   8, 8, 8, 8, 8, 8, 8, 8,
   8, 8, 8, 8, 8, 8, 8, 8,
   4, 8, 8, 4, 4, 8, 8, 8,
   4, 4, 8, 8, 8, 8, 8, 8
+};*/
+
+
+int melody[] = {
+NOTE_D5, NOTE_F5, NOTE_D5, NOTE_D5, NOTE_G5, NOTE_D5, NOTE_C5,
+NOTE_D5, NOTE_A5, NOTE_D5, NOTE_D5, NOTE_B5, NOTE_A5, NOTE_F5, //Check A5 and B5 for an error
+NOTE_D5, NOTE_A5, NOTE_D6, NOTE_D5, NOTE_C5, NOTE_C5, NOTE_A4, NOTE_E5, NOTE_D5,
+0, NOTE_D5, NOTE_D5,
+};
+
+int noteDurations [] = {
+4, 6, 8, 16, 8, 8, 8,
+4, 6, 8, 16, 8, 8, 8, 
+8, 8, 8, 16, 8, 16, 8, 8, 8,
+2, 4, 4,
 };
 
 void setup() {
@@ -116,7 +132,7 @@ void setup() {
     buzzer.tone(melody[thisNote], noteDuration);  // Play note on mBot buzzer
 
     // Pause between notes
-    int pauseBetweenNotes = noteDuration * 1.30;
+    int pauseBetweenNotes = noteDuration * 1.30; //Reduce the 1.30 for a faster tempo
     delay(pauseBetweenNotes);
 
     // Stop the tone to create a silence between notes
