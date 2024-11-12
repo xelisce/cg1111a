@@ -88,10 +88,52 @@ hsv_type hsv;
 
 // floats to hold colour arrays
 float colourArray[] = {0, 0, 0};
-float whiteArray[] = {808.00, 897.00, 785.00}; // change this after calibration
-float blackArray[] = {645.00, 505.00, 489.00}; // change this after calibration
+float whiteArray[] = {841.00, 915.00, 825.00}; // change this after calibration
+float blackArray[] = {634.00, 553.00, 573.00}; // change this after calibration
 float greyDiff[] = {0, 0, 0};
 char colourStr[3][5] = {"R = ", "G = ", "B = "};
+
+struct Color {
+    int r, g, b;
+};
+
+Color currentColor = {0, 0, 0};
+
+// Function to compute the Euclidean distance between two colors
+float euclideanDistance(const Color& c1, const Color& c2) {
+    return sqrt(pow(c2.r - c1.r, 2) + pow(c2.g - c1.g, 2) + pow(c2.b - c1.b, 2));
+}
+
+// Function to find the closest predefined color (returns an integer code for the color)
+int closestColor(const Color& inputColor) {
+    // Define RGB values for the predefined colors
+    Color red = {273, 100, 82};
+    Color orange = {282, 170, 86};
+    Color blue = {153, 218, 236};
+    Color green = {163, 222, 126};
+    Color pink = {287, 231, 227};
+    Color white = {283, 257, 264};
+    
+    // Array of predefined colors
+    Color colors[] = {red, orange, blue, green, pink, white};
+
+    // Index of the closest color (integer code)
+    int closestColorIndex = 0;
+
+    // Initial minimum distance, assuming the first color (red) is the closest
+    float minDistance = euclideanDistance(inputColor, colors[0]);
+    
+    // Compare input color with all predefined colors
+    for (int i = 1; i < 6; i++) {
+        float distance = euclideanDistance(inputColor, colors[i]);
+        if (distance < minDistance) {
+            minDistance = distance;
+            closestColorIndex = i;
+        }
+    }
+    
+    return closestColorIndex;
+}
 
 void setup()
 {
@@ -150,24 +192,24 @@ void loop()
     double rawDistance = backgroundIR - currentReading;
     right = getDistFromIR(rawDistance);
     // pid controller
-    if (left == -1 && right == -1) // both out of range
+    if (left == -1) // both out of range
     {
       rotation = 0;
     }
-    else if (right == -1 || (left < right && left > 0) || !(right > 0)) // right out of bounds, or left is closer
+    else// right out of bounds, or left is closer
     {
       Serial.println("Using left");
       rotation = pidControllerLeft(left);
     }
-    else if (left == -1 || (right < left && right > 0) || !(left > 0)) // left out of bounds, or right is closer
-    {
-      Serial.println("Using right");
-      rotation = pidControllerRight(right);
-    }
-    else // same
-    {
-      rotation = 0;
-    }
+    // else if (left == -1 || (right < left && right > 0) || !(left > 0)) // left out of bounds, or right is closer
+    // {
+    //   Serial.println("Using right");
+    //   rotation = pidControllerRight(right);
+    // }
+    // else // same
+    // {
+    //   rotation = 0;
+    // }
     differentialSteer(&leftMotor, &rightMotor, motorSpeed, rotation);
     if (is_at_line())
     {
@@ -198,7 +240,11 @@ void loop()
     Serial.println("Sensing color");
 #endif
     read_color(&hsv); // Use the loop in led.ino to make it sense the colour
-    determine_color(&hsv);
+    // determine_color(&hsv);
+    int current_task = closestColor(currentColor);
+    determine_color(current_task);
+    Serial.print("Current Task: ");
+    Serial.println(current_task);
   }
   else if (movement == STOP)
   {
@@ -360,6 +406,9 @@ void read_color(struct hsv_type *hsv)
   Serial.println(int(colourArray[2]));
 
   hsv_converter(hsv, colourArray[0], colourArray[1], colourArray[2]);
+  currentColor.r = colourArray[0];
+  currentColor.g = colourArray[1];
+  currentColor.b = colourArray[2];
 #if PRINT
   Serial.print("H: ");
   Serial.println(hsv->h);
@@ -370,16 +419,16 @@ void read_color(struct hsv_type *hsv)
 #endif
 }
 
-void determine_color(struct hsv_type *hsv)
+void determine_color(int current_task)
 {
-  if ((int(colourStr[0]) + int(colourArray[1]) + int(colourArray[2])) > (252 * 3))
+  if (current_task == 5)
   {
 #if PRINT
     Serial.println("WHITE");
 #endif
     movement = STOP;
   }
-  else if (((hsv->h > 300 && hsv->h < 330) && hsv->s > 30) || ((hsv->h > 330 || hsv->h < 30) && hsv->s < 40))
+  else if (current_task == 4)
   {
 #if PRINT
     Serial.println("PINK");
@@ -389,7 +438,7 @@ void determine_color(struct hsv_type *hsv)
     delay(1000);
     movement = WALLTRACK;
   }
-  else if ((hsv->h > 330 || hsv->h < 20) && hsv->s > 50)
+  else if (current_task == 0)
   {
 #if PRINT
     Serial.println("RED");
@@ -399,7 +448,7 @@ void determine_color(struct hsv_type *hsv)
     delay(1000);
     movement = WALLTRACK;
   }
-  else if (hsv->h > 100 && hsv->h < 150 && hsv->s > 40)
+  else if (current_task == 3)
   {
 #if PRINT
     Serial.println("GREEN");
@@ -409,7 +458,7 @@ void determine_color(struct hsv_type *hsv)
     delay(1000);
     movement = WALLTRACK;
   }
-  else if (hsv->h > 180 && hsv->h < 255 && hsv->s > 40)
+  else if (current_task == 2)
   {
 #if PRINT
     Serial.println("BLUE");
@@ -419,7 +468,7 @@ void determine_color(struct hsv_type *hsv)
     delay(1000);
     movement = WALLTRACK;
   }
-  else if ((hsv->h > 20 && hsv->h < 50) && hsv->s > 50)
+  else if (current_task == 1)
   {
 #if PRINT
     Serial.println("ORANGE");
@@ -531,7 +580,7 @@ void turnLeftBlocking(MeDCMotor *leftMotor, MeDCMotor *rightMotor)
 {
   rightMotor->run(motorSpeed * RIGHT_MOTOR_BIAS);
   leftMotor->run(motorSpeed * LEFT_MOTOR_BIAS);
-  delay(365);
+  delay(600);
   leftMotor->stop();
   rightMotor->stop();
 }
@@ -540,8 +589,8 @@ void turnLeftUTurnBlocking(MeDCMotor *leftMotor, MeDCMotor *rightMotor)
 {
   turnLeftBlocking(leftMotor, rightMotor);
   delay(500);
-  moveStraightBlocking(leftMotor, rightMotor, 1000);
-  delay(180);
+  moveStraightBlocking(leftMotor, rightMotor, 1400);
+  delay(500);
   turnLeftBlocking(leftMotor, rightMotor);
   delay(500);
   leftMotor->stop();
@@ -552,7 +601,7 @@ void turnRightBlocking(MeDCMotor *leftMotor, MeDCMotor *rightMotor)
 {
   rightMotor->run(-motorSpeed * RIGHT_MOTOR_BIAS);
   leftMotor->run(-motorSpeed * LEFT_MOTOR_BIAS);
-  delay(365);
+  delay(570);
   leftMotor->stop();
   rightMotor->stop();
 }
@@ -561,8 +610,8 @@ void turnRightUTurnBlocking(MeDCMotor *leftMotor, MeDCMotor *rightMotor)
 {
   turnRightBlocking(leftMotor, rightMotor);
   delay(500);
-  moveStraightBlocking(leftMotor, rightMotor, 1000);
-  delay(180);
+  moveStraightBlocking(leftMotor, rightMotor, 1500);
+  delay(500);
   turnRightBlocking(leftMotor, rightMotor);
   delay(500);
   leftMotor->stop();
@@ -573,14 +622,14 @@ void turnOnTheSpotBlocking(MeDCMotor *leftMotor, MeDCMotor *rightMotor)
 {
   rightMotor->run(-motorSpeed * RIGHT_MOTOR_BIAS);
   leftMotor->run(-motorSpeed * LEFT_MOTOR_BIAS);
-  delay(765);
+  delay(1135);
   leftMotor->stop();
   rightMotor->stop();
 }
 
 void moveStraightBlocking(MeDCMotor *leftMotor, MeDCMotor *rightMotor, int time)
 {
-  rightMotor->run(motorSpeed * RIGHT_MOTOR_BIAS);
+  rightMotor->run(motorSpeed * MOTOR_BIAS_MORE_RIGHT);
   leftMotor->run(-motorSpeed * LEFT_MOTOR_BIAS);
   delay(time);
   leftMotor->stop();

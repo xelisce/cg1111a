@@ -1,18 +1,19 @@
 
 #include "MeMCore.h"
 #define LEFT_MOTOR_BIAS 1              // from 0 to 1, because robot doesn't move straight
-#define RIGHT_MOTOR_BIAS 1             // from 0 to 1, because robot doesn't move straight
+#define RIGHT_MOTOR_BIAS 0.75             // from 0 to 1, because robot doesn't move straight
+#define MOTOR_BIAS_MORE_RIGHT 0.77
 
 MeDCMotor leftMotor(M1);  // assigning leftMotor to port M1
 MeDCMotor rightMotor(M2); // assigning RightMotor to port M2
-uint8_t motorSpeed = 255;
+uint8_t motorSpeed = 180;
 
 
 void turnLeftBlocking(MeDCMotor *leftMotor, MeDCMotor *rightMotor)
 {
   rightMotor->run(motorSpeed * RIGHT_MOTOR_BIAS);
   leftMotor->run(motorSpeed * LEFT_MOTOR_BIAS);
-  delay(365);
+  delay(570);
   leftMotor->stop();
   rightMotor->stop();
 }
@@ -33,7 +34,7 @@ void turnRightBlocking(MeDCMotor *leftMotor, MeDCMotor *rightMotor)
 {
   rightMotor->run(-motorSpeed * RIGHT_MOTOR_BIAS);
   leftMotor->run(-motorSpeed * LEFT_MOTOR_BIAS);
-  delay(365);
+  delay(570);
   leftMotor->stop();
   rightMotor->stop();
 }
@@ -54,14 +55,14 @@ void turnOnTheSpotBlocking(MeDCMotor *leftMotor, MeDCMotor *rightMotor)
 {
   rightMotor->run(-motorSpeed * RIGHT_MOTOR_BIAS);
   leftMotor->run(-motorSpeed * LEFT_MOTOR_BIAS);
-  delay(635);
+  delay(1135);
   leftMotor->stop();
   rightMotor->stop();
 }
 
 void moveStraightBlocking(MeDCMotor *leftMotor, MeDCMotor *rightMotor, int time)
 {
-  rightMotor->run(motorSpeed * RIGHT_MOTOR_BIAS);
+  rightMotor->run(motorSpeed * MOTOR_BIAS_MORE_RIGHT);
   leftMotor->run(-motorSpeed * LEFT_MOTOR_BIAS);
   delay(time);
   leftMotor->stop();
@@ -89,5 +90,7 @@ void setup()
 }
 void loop()
 {
-  moveStraight(&leftMotor, &rightMotor)
+  // turnRightBlocking(&leftMotor, &rightMotor);
+  delay(1000);
+  turnOnTheSpotBlocking(&leftMotor, &rightMotor);
 }

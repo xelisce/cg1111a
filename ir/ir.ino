@@ -46,5 +46,5 @@ void turnOffEmitter() {
 }
 
 double getDistFromIR(double val) {
-    return 86.61 * pow(val, -0.615);
+    return 100.9 * pow(val, -0.641);
 }
