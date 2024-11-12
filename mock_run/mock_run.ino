@@ -55,10 +55,9 @@ void turnLeftUTurnBlocking();
 
 // variables!
 uint8_t motorSpeed = 255;
-uint8_t motorTurnSpeed = 255;
-double currentError = 0,
+double currentError = 0, // differential steer variables
        rotation = 0;
-double IRKp = 0.06,
+double IRKp = 0.06, // PD variables
        IRKd = 0,
        UltrasonicKp = 0.06,
        UltrasonicKd = 0,
