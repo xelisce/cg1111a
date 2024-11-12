@@ -31,7 +31,8 @@
 MeLineFollower lineFinder(PORT_2); // assigning lineFinder to RJ25 port 2
 MeDCMotor leftMotor(M1);           // assigning leftMotor to port M1
 MeDCMotor rightMotor(M2);
-uint8_t motorSpeed = 180;
+uint8_t motorSpeed = 200;
+uint8_t motorTurnSpeed = 180;
 
 // function headers!
 void differentialSteer(MeDCMotor *leftMotor, MeDCMotor *rightMotor, double motorSpeed, double rotation);
@@ -192,7 +193,7 @@ void loop()
     double rawDistance = backgroundIR - currentReading;
     right = getDistFromIR(rawDistance);
     // pid controller
-    if (left == -1) // both out of range
+    if (left == -1 && right == -1) // both out of range
     {
       rotation = 0;
     }
@@ -352,7 +353,7 @@ double pidControllerRight(double reading)
 {
   // loopInterval = millis() - lastLoopTime;
   // lastLoopTime = millis();
-  return (reading - 8.22) * IRKp; // setpoint
+  return (reading - 8.55) * IRKp; // setpoint
   // d = (currentError / loopInterval) * kd;
   // currentError = p + d;
   // return p;
@@ -362,7 +363,7 @@ double pidControllerLeft(double reading)
 {
   // loopInterval = millis() - lastLoopTime;
   // lastLoopTime = millis();
-  return (9.58 - reading) * UltrasonicKp; // setpoint
+  return (8.06 - reading) * UltrasonicKp; // setpoint
   // d = (currentError / loopInterval) * kd;
   // currentError = p + d;
   // return p;
@@ -433,9 +434,9 @@ void determine_color(int current_task)
 #if PRINT
     Serial.println("PINK");
 #endif
-    // delay(1000);
+    delay(1000);
     turnLeftUTurnBlocking(&leftMotor, &rightMotor);
-    // delay(1000);
+    delay(1000);
     movement = WALLTRACK;
   }
   else if (current_task == 0)
@@ -443,9 +444,9 @@ void determine_color(int current_task)
 #if PRINT
     Serial.println("RED");
 #endif
-    // delay(1000);
+    delay(1000);
     turnLeftBlocking(&leftMotor, &rightMotor);
-    // delay(1000);
+    delay(1000);
     movement = WALLTRACK;
   }
   else if (current_task == 3)
@@ -453,9 +454,9 @@ void determine_color(int current_task)
 #if PRINT
     Serial.println("GREEN");
 #endif
-    // delay(1000);
+    delay(1000);
     turnRightBlocking(&leftMotor, &rightMotor);
-    // delay(1000);
+    delay(1000);
     movement = WALLTRACK;
   }
   else if (current_task == 2)
@@ -463,9 +464,9 @@ void determine_color(int current_task)
 #if PRINT
     Serial.println("BLUE");
 #endif
-    // delay(1000);
+    delay(1000);
     turnRightUTurnBlocking(&leftMotor, &rightMotor);
-    // delay(1000);
+    delay(1000);
     movement = WALLTRACK;
   }
   else if (current_task == 1)
@@ -473,9 +474,9 @@ void determine_color(int current_task)
 #if PRINT
     Serial.println("ORANGE");
 #endif
-    // delay(1000);
+    delay(1000);
     turnOnTheSpotBlocking(&leftMotor, &rightMotor);
-    // delay(1000);
+    delay(1000);
     movement = WALLTRACK;
   }
   else
@@ -578,8 +579,8 @@ void transmitUltrasonic()
 
 void turnLeftBlocking(MeDCMotor *leftMotor, MeDCMotor *rightMotor)
 {
-  rightMotor->run(motorSpeed * RIGHT_MOTOR_BIAS);
-  leftMotor->run(motorSpeed * LEFT_MOTOR_BIAS);
+  rightMotor->run(motorTurnSpeed * RIGHT_MOTOR_BIAS);
+  leftMotor->run(motorTurnSpeed * LEFT_MOTOR_BIAS);
   delay(600);
   leftMotor->stop();
   rightMotor->stop();
@@ -588,19 +589,19 @@ void turnLeftBlocking(MeDCMotor *leftMotor, MeDCMotor *rightMotor)
 void turnLeftUTurnBlocking(MeDCMotor *leftMotor, MeDCMotor *rightMotor)
 {
   turnLeftBlocking(leftMotor, rightMotor);
-  // delay(500);
+  delay(500);
   moveStraightBlocking(leftMotor, rightMotor, 1400);
-  // delay(500);
+  delay(500);
   turnLeftBlocking(leftMotor, rightMotor);
-  // delay(500);
+  delay(500);
   leftMotor->stop();
   rightMotor->stop();
 }
 
 void turnRightBlocking(MeDCMotor *leftMotor, MeDCMotor *rightMotor)
 {
-  rightMotor->run(-motorSpeed * RIGHT_MOTOR_BIAS);
-  leftMotor->run(-motorSpeed * LEFT_MOTOR_BIAS);
+  rightMotor->run(-motorTurnSpeed * RIGHT_MOTOR_BIAS);
+  leftMotor->run(-motorTurnSpeed * LEFT_MOTOR_BIAS);
   delay(570);
   leftMotor->stop();
   rightMotor->stop();
@@ -609,19 +610,19 @@ void turnRightBlocking(MeDCMotor *leftMotor, MeDCMotor *rightMotor)
 void turnRightUTurnBlocking(MeDCMotor *leftMotor, MeDCMotor *rightMotor)
 {
   turnRightBlocking(leftMotor, rightMotor);
-  // delay(500);
-  moveStraightBlocking(leftMotor, rightMotor, 1400);
-  // delay(500);
+  delay(500);
+  moveStraightBlocking(leftMotor, rightMotor, 1500);
+  delay(500);
   turnRightBlocking(leftMotor, rightMotor);
-  // delay(500);
+  delay(500);
   leftMotor->stop();
   rightMotor->stop();
 }
 
 void turnOnTheSpotBlocking(MeDCMotor *leftMotor, MeDCMotor *rightMotor)
 {
-  rightMotor->run(-motorSpeed * RIGHT_MOTOR_BIAS);
-  leftMotor->run(-motorSpeed * LEFT_MOTOR_BIAS);
+  rightMotor->run(-motorTurnSpeed * RIGHT_MOTOR_BIAS);
+  leftMotor->run(-motorTurnSpeed * LEFT_MOTOR_BIAS);
   delay(1135);
   leftMotor->stop();
   rightMotor->stop();
@@ -653,14 +654,14 @@ void differentialSteer(MeDCMotor *leftMotor, MeDCMotor *rightMotor, double motor
   double slower = 1 - 2 * fabs(rotation);
   if (rotation < 0)
   { // turning left
-    rightMotor->run(motorSpeed);
-    leftMotor->run(-motorSpeed * slower);
+    rightMotor->run(motorSpeed * RIGHT_MOTOR_BIAS);
+    leftMotor->run(-motorSpeed * LEFT_MOTOR_BIAS * slower);
   }
   else
   { // turning right
-    rightMotor->run(motorSpeed * slower);
-    leftMotor->run(-motorSpeed);
-  }
+    rightMotor->run(motorSpeed * RIGHT_MOTOR_BIAS * slower);
+    leftMotor->run(-motorSpeed * LEFT_MOTOR_BIAS);
+  } 
 }
 
 float receiveUltrasonic() // in cm
