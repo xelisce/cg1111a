@@ -29,24 +29,21 @@ MeLineFollower lineFinder(PORT_2); // assigning lineFinder to RJ25 port 2
 MeDCMotor leftMotor(M1);           // assigning leftMotor to port M1
 MeDCMotor rightMotor(M2);
 MeBuzzer buzzer;
-uint8_t motorSpeed = 255;
-uint8_t motorTurnSpeed = 255;
 
 // function headers!
-void differentialSteer(double motorSpeed, double rotation);
 void transmitUltrasonic();
 float receiveUltrasonic();
-double receiveIR();
+
 void setBalance();
 bool test_line();
-void hsv_converter(struct hsv_type *hsv, double r, double g, double b);
 void read_color();
+
 double getDistFromIR(double val);
 void turnOnEmitter();
 void turnOffEmitter();
 
+void differentialSteer(double motorSpeed, double rotation);
 void stop_moving();
-void stopMotors();
 void moveStraight();
 void moveStraightBlocking(int time);
 void turnOnTheSpotBlocking();
@@ -56,6 +53,8 @@ void turnLeftBlocking();
 void turnLeftUTurnBlocking();
 
 // variables!
+uint8_t motorSpeed = 255;
+uint8_t motorTurnSpeed = 255;
 double currentError = 0,
        rotation = 0;
 double IRKp = 0.06,
@@ -69,22 +68,13 @@ double left = 0,
 unsigned long lastReadUltrasonic,
     lastLoopTime,
     loopInterval;
-
-// self-declared
 enum MovementTypes
 {
   WALLTRACK,   // 0
   COLOR_SENSE, // 1
   STOP         // 2
 };
-enum MovementTypes movement = WALLTRACK; // default setting where it is moving forward with walltracking CHANGEDD!!
-struct hsv_type
-{
-  double h;
-  double s;
-  double v;
-};
-hsv_type hsv;
+enum MovementTypes movement = WALLTRACK; // default setting where it is moving forward with walltracking
 
 // floats to hold colour arrays
 float colourArray[] = {0, 0, 0};
@@ -92,12 +82,10 @@ float whiteArray[] = {841.00, 915.00, 825.00}; // change this after calibration
 float blackArray[] = {634.00, 553.00, 573.00}; // change this after calibration
 float greyDiff[] = {whiteArray[0] - blackArray[0], whiteArray[1] - blackArray[1], whiteArray[2] - blackArray[2]};
 char RGBColourStr[3][5] = {"R = ", "G = ", "B = "};
-
 struct Color
 {
   int r, g, b;
 };
-
 Color currentColor = {0, 0, 0};
 
 // Function to compute the Euclidean distance between two colors
@@ -246,7 +234,7 @@ void loop()
 #endif
     read_color(); // Use the loop in led.ino to make it sense the colour
     int current_task = closestColor(currentColor);
-    determine_color(current_task);
+    do_color(current_task);
 #if PRINT
     Serial.print("Current Task: ");
     Serial.println(current_task);
@@ -375,7 +363,7 @@ void read_color()
 #endif
 }
 
-void determine_color(int current_task)
+void do_color(int current_task)
 {
   if (current_task == 5)
   {
@@ -437,94 +425,6 @@ void stop_moving()
 {
   leftMotor.stop();
   rightMotor.stop();
-}
-
-void setBalance()
-{
-// set white balance
-#if PRINT_CALIBRATION
-  Serial.println("Put White Sample For Calibration ...");
-#endif
-  delay(5000); // delay for five seconds for getting sample ready
-  digitalWrite(LED, HIGH);
-  // scan the white sample.
-  // go through one colour at a time, set the maximum reading for each colour -- red, green and blue to the white array
-  digitalWrite(PIN_A, HIGH); // on red light
-  digitalWrite(PIN_B, LOW);
-  delay(RGBWait);
-  whiteArray[0] = getAvgReading(5);
-  digitalWrite(PIN_A, LOW);
-  digitalWrite(PIN_B, LOW);
-  delay(RGBWait);
-  digitalWrite(PIN_A, LOW); // on green light
-  digitalWrite(PIN_B, HIGH);
-  delay(RGBWait);
-  whiteArray[1] = getAvgReading(5);
-  digitalWrite(PIN_A, LOW);
-  digitalWrite(PIN_B, LOW);
-  delay(RGBWait);
-  digitalWrite(PIN_A, HIGH); // on blue light
-  digitalWrite(PIN_B, HIGH);
-  delay(RGBWait);
-  whiteArray[2] = getAvgReading(5);
-  digitalWrite(PIN_A, LOW);
-  digitalWrite(PIN_B, LOW);
-  delay(RGBWait);
-#if PRINT_CALIBRATION
-  for (int i = 0; i <= 2; i++)
-  {
-    Serial.print(whiteArray[i]);
-    Serial.print(", ");
-  }
-  Serial.println();
-  // done scanning white, time for the black sample.
-  // set black balance
-  Serial.println("Put Black Sample For Calibration ...");
-#endif
-  delay(5000); // delay for five seconds for getting sample ready
-  // go through one colour at a time, set the minimum reading for red, green and blue to the black array
-  digitalWrite(PIN_A, HIGH); // on red light
-  digitalWrite(PIN_B, LOW);
-  delay(RGBWait);
-  blackArray[0] = getAvgReading(5);
-  digitalWrite(PIN_A, LOW);
-  digitalWrite(PIN_B, LOW);
-  delay(RGBWait);
-  digitalWrite(PIN_A, LOW); // on green light
-  digitalWrite(PIN_B, HIGH);
-  delay(RGBWait);
-  blackArray[1] = getAvgReading(5);
-  digitalWrite(PIN_A, LOW);
-  digitalWrite(PIN_B, LOW);
-  delay(RGBWait);
-  digitalWrite(PIN_A, HIGH); // on blue light
-  digitalWrite(PIN_B, HIGH);
-  delay(RGBWait);
-  blackArray[2] = getAvgReading(5);
-  digitalWrite(PIN_A, LOW);
-  digitalWrite(PIN_B, LOW);
-  delay(RGBWait);
-#if PRINT_CALIBRATION
-  for (int i = 0; i <= 2; i++)
-  {
-    Serial.print(blackArray[i]);
-    Serial.print(", ");
-  }
-  Serial.println();
-  Serial.println("Computing grey...");
-  // delay before starting program
-  Serial.println("Ready to begin run");
-#endif
-  delay(2000);
-}
-
-void transmitUltrasonic()
-{
-  digitalWrite(ULTRASONIC, LOW);
-  delayMicroseconds(2);
-  digitalWrite(ULTRASONIC, HIGH);
-  delayMicroseconds(10);
-  digitalWrite(ULTRASONIC, LOW);
 }
 
 void gradualSpeed(int targetSpeed, int stepDelay, bool isTurn, bool isRightTurn = false)
@@ -611,12 +511,6 @@ void moveStraight()
   leftMotor.run(-motorSpeed * LEFT_MOTOR_BIAS);
 }
 
-void stopMotors()
-{
-  leftMotor.stop();
-  rightMotor.stop();
-}
-
 void differentialSteer(double motorSpeed, double rotation)
 {
   double slower = 1 - 2 * fabs(rotation);
@@ -630,6 +524,15 @@ void differentialSteer(double motorSpeed, double rotation)
     rightMotor.run(motorSpeed * RIGHT_MOTOR_BIAS * slower);
     leftMotor.run(-motorSpeed * LEFT_MOTOR_BIAS);
   }
+}
+
+void transmitUltrasonic()
+{
+  digitalWrite(ULTRASONIC, LOW);
+  delayMicroseconds(2);
+  digitalWrite(ULTRASONIC, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(ULTRASONIC, LOW);
 }
 
 float receiveUltrasonic() // in cm
@@ -667,4 +570,83 @@ int getAvgReading(int times)
   }
   // calculate the average and return it
   return total / times;
+}
+
+void setBalance()
+{
+// set white balance
+#if PRINT_CALIBRATION
+  Serial.println("Put White Sample For Calibration ...");
+#endif
+  delay(5000); // delay for five seconds for getting sample ready
+  digitalWrite(LED, HIGH);
+  // scan the white sample.
+  // go through one colour at a time, set the maximum reading for each colour -- red, green and blue to the white array
+  digitalWrite(PIN_A, HIGH); // on red light
+  digitalWrite(PIN_B, LOW);
+  delay(RGBWait);
+  whiteArray[0] = getAvgReading(5);
+  digitalWrite(PIN_A, LOW);
+  digitalWrite(PIN_B, LOW);
+  delay(RGBWait);
+  digitalWrite(PIN_A, LOW); // on green light
+  digitalWrite(PIN_B, HIGH);
+  delay(RGBWait);
+  whiteArray[1] = getAvgReading(5);
+  digitalWrite(PIN_A, LOW);
+  digitalWrite(PIN_B, LOW);
+  delay(RGBWait);
+  digitalWrite(PIN_A, HIGH); // on blue light
+  digitalWrite(PIN_B, HIGH);
+  delay(RGBWait);
+  whiteArray[2] = getAvgReading(5);
+  digitalWrite(PIN_A, LOW);
+  digitalWrite(PIN_B, LOW);
+  delay(RGBWait);
+#if PRINT_CALIBRATION
+  for (int i = 0; i <= 2; i++)
+  {
+    Serial.print(whiteArray[i]);
+    Serial.print(", ");
+  }
+  Serial.println();
+  // done scanning white, time for the black sample.
+  // set black balance
+  Serial.println("Put Black Sample For Calibration ...");
+#endif
+  delay(5000); // delay for five seconds for getting sample ready
+  // go through one colour at a time, set the minimum reading for red, green and blue to the black array
+  digitalWrite(PIN_A, HIGH); // on red light
+  digitalWrite(PIN_B, LOW);
+  delay(RGBWait);
+  blackArray[0] = getAvgReading(5);
+  digitalWrite(PIN_A, LOW);
+  digitalWrite(PIN_B, LOW);
+  delay(RGBWait);
+  digitalWrite(PIN_A, LOW); // on green light
+  digitalWrite(PIN_B, HIGH);
+  delay(RGBWait);
+  blackArray[1] = getAvgReading(5);
+  digitalWrite(PIN_A, LOW);
+  digitalWrite(PIN_B, LOW);
+  delay(RGBWait);
+  digitalWrite(PIN_A, HIGH); // on blue light
+  digitalWrite(PIN_B, HIGH);
+  delay(RGBWait);
+  blackArray[2] = getAvgReading(5);
+  digitalWrite(PIN_A, LOW);
+  digitalWrite(PIN_B, LOW);
+  delay(RGBWait);
+#if PRINT_CALIBRATION
+  for (int i = 0; i <= 2; i++)
+  {
+    Serial.print(blackArray[i]);
+    Serial.print(", ");
+  }
+  Serial.println();
+  Serial.println("Computing grey...");
+  // delay before starting program
+  Serial.println("Ready to begin run");
+#endif
+  delay(2000);
 }

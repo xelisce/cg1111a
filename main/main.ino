@@ -180,7 +180,3 @@ float receiveUltrasonic() { // in cm
     return -1;
   }
 }
-
-double receiveIR() {
-  return (val*(IR_HIGH_DIST-IR_LOW_DIST))/(IR_HIGH_READING-IR_LOW_READING)+IR_LOW_DIST;
-}
