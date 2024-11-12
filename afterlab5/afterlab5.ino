@@ -13,8 +13,8 @@
 #define RGBWait 200                    // in milliseconds
 #define LDRWait 10                     // in milliseconds
 #define TURNING_TIME 375               // in milliseconds
-#define LEFT_MOTOR_BIAS 1              // from 0 to 1, because robot doesn't move straight
-#define RIGHT_MOTOR_BIAS 0.85             // from 0 to 1, because robot doesn't move straight
+#define LEFT_MOTOR_BIAS 1            // from 0 to 1, because robot doesn't move straight
+#define RIGHT_MOTOR_BIAS 0.85         // from 0 to 1, because robot doesn't move straight
 
 // pins!
 #define ULTRASONIC 12
@@ -29,7 +29,7 @@
 MeLineFollower lineFinder(PORT_2); // assigning lineFinder to RJ25 port 2
 MeDCMotor leftMotor(M1);           // assigning leftMotor to port M1
 MeDCMotor rightMotor(M2);
-uint8_t motorSpeed = 255;
+uint8_t motorSpeed = 180;
 
 // function headers!
 void differentialSteer(MeDCMotor *leftMotor, MeDCMotor *rightMotor, double motorSpeed, double rotation);
@@ -40,6 +40,9 @@ void setBalance();
 bool is_at_line();
 void hsv_converter(struct hsv_type *hsv, double r, double g, double b);
 void read_color();
+double getDistFromIR(double val);
+void turnOnEmitter();
+void turnOffEmitter();
 
 void stop_moving();
 void stopMotors(MeDCMotor *leftMotor, MeDCMotor *rightMotor);
@@ -54,26 +57,23 @@ void turnLeftUTurnBlocking(MeDCMotor *leftMotor, MeDCMotor *rightMotor);
 // variables!
 double currentError = 0,
        rotation = 0;
-double kp = 0.06,
+double IRKp = 0.06,
+UltrasonicKp = 0.06,
        kd = 0,
        p = 0,
        d = 0;
 double left = 0,
        right = 0;
 unsigned long lastReadUltrasonic,
-    lastLoopTime;
+    lastLoopTime,
+    loopInterval;
 
 // self-declared
 enum MovementTypes
 {
-  WALLTRACK,          // 0
-  LEFT_TURN,          // 1
-  LEFT_U_TURN,        // 2
-  RIGHT_TURN,         // 3
-  RIGHT_U_TURN,       // 4
-  ON_THE_SPOT_U_TURN, // 5
-  COLOR_SENSE,        // 6
-  STOP                // 7
+  WALLTRACK,   // 0
+  COLOR_SENSE, // 1
+  STOP         // 2
 };
 enum MovementTypes movement = WALLTRACK; // default setting where it is moving forward with walltracking CHANGEDD!!
 struct hsv_type
@@ -127,23 +127,46 @@ void loop()
   Serial.print("Bef loop: ");
   Serial.println(movement);
 #endif
-  switch (movement)
+  if (movement == WALLTRACK)
   {
-  case WALLTRACK:
 #if PRINT
     Serial.println("WALLTRACKING");
 #endif
+    // ultrasonic
+    // if ((millis() - lastReadUltrasonic) > 10)
     transmitUltrasonic();
     left = receiveUltrasonic(); // in cm
     lastReadUltrasonic = millis();
     delay(10);
-    right = 9;             // TODO replace with ir sensor
-    p = (left - right) * kp; // pid controller
-    d = (currentError / (millis() - lastLoopTime)) * kd;
-    currentError = p + d;
-    rotation = (left == -1 || right == -1) ? 0 : currentError; // if left or right wall missing, just go straight
-    differentialSteer(&leftMotor, &rightMotor, 255, rotation);
-    lastLoopTime = millis();
+    // ir sensor
+    turnOnEmitter();
+    delay(2);
+    int currentReading = analogRead(IR_PIN_IN);
+    turnOffEmitter();
+    delay(2);
+    int backgroundIR = analogRead(IR_PIN_IN);
+    double rawDistance = backgroundIR - currentReading;
+    right = getDistFromIR(rawDistance);
+    // pid controller
+    if (left == -1 && right == -1) // both out of range
+    {
+      rotation = 0;
+    }
+    else if (right == -1 || (left < right && left > 0) || !(right > 0)) // right out of bounds, or left is closer
+    {
+      Serial.println("Using left");
+      rotation = pidControllerLeft(left);
+    }
+    else if (left == -1 || (right < left && right > 0) || !(left > 0)) // left out of bounds, or right is closer
+    {
+      Serial.println("Using right");
+      rotation = pidControllerRight(right);
+    }
+    else // same
+    {
+      rotation = 0;
+    }
+    differentialSteer(&leftMotor, &rightMotor, motorSpeed, rotation);
     if (is_at_line())
     {
 #if PRINT
@@ -152,7 +175,9 @@ void loop()
       movement = COLOR_SENSE;
     }
 #if PRINT
-    Serial.print("Rotation: ");
+    Serial.print("Loop time: ");
+    Serial.print(loopInterval);
+    Serial.print("  Rotation: ");
     Serial.print(rotation);
     Serial.print("  Error: ");
     Serial.println(currentError);
@@ -163,27 +188,25 @@ void loop()
     Serial.print(" | Rotation: ");
     Serial.print(rotation);
 #endif
-    break;
-
-  case COLOR_SENSE:
+  }
+  else if (movement == COLOR_SENSE)
+  {
     stop_moving(&leftMotor, &rightMotor);
-    delay(1000);
 #if PRINT
     Serial.println("Sensing color");
 #endif
     read_color(&hsv); // Use the loop in led.ino to make it sense the colour
     determine_color(&hsv);
-    break;
-
-  case STOP:
+  }
+  else if (movement == STOP)
+  {
     Serial.println("Sensed white - STOPPED");
     stop_moving(&leftMotor, &rightMotor);
-    movement = WALLTRACK;
-    break;
-
-  default:
+    // movement = WALLTRACK;
+  }
+  else
+  {
     Serial.print("ERROR");
-    break;
   }
 
 #if PRINT
@@ -251,6 +274,52 @@ bool is_at_line() // sensing double black
   }
   return true;
 }
+void turnOnEmitter()
+{
+  digitalWrite(PIN_A, LOW);
+  digitalWrite(PIN_B, LOW);
+}
+
+void turnOffEmitter()
+{
+  digitalWrite(PIN_A, HIGH);
+  digitalWrite(PIN_B, LOW);
+}
+double getDistFromIR(double val)
+{
+  if (val > 22)
+  {
+    Serial.print("IR readings: ");
+    double result = 86.61 * pow(val, -0.615);
+    Serial.println(result);
+    return result;
+  }
+  else
+  {
+    return -1;
+  }
+}
+
+double pidControllerRight(double reading)
+{
+  // loopInterval = millis() - lastLoopTime;
+  // lastLoopTime = millis();
+  return (reading - 8.0) * IRKp; // setpoint
+  // d = (currentError / loopInterval) * kd;
+  // currentError = p + d;
+  // return p;
+}
+
+double pidControllerLeft(double reading)
+{
+  // loopInterval = millis() - lastLoopTime;
+  // lastLoopTime = millis();
+  return (7.5 - reading) * UltrasonicKp; // setpoint
+  // d = (currentError / loopInterval) * kd;
+  // currentError = p + d;
+  // return p;
+}
+
 
 void read_color(struct hsv_type *hsv)
 {
@@ -533,13 +602,13 @@ void differentialSteer(MeDCMotor *leftMotor, MeDCMotor *rightMotor, double motor
   double slower = 1 - 2 * fabs(rotation);
   if (rotation < 0)
   { // turning left
-    leftMotor->run(-motorSpeed);
-    rightMotor->run(motorSpeed * slower);
+    rightMotor->run(motorSpeed);
+    leftMotor->run(-motorSpeed * slower);
   }
   else
   { // turning right
-    leftMotor->run(-motorSpeed * slower);
-    rightMotor->run(motorSpeed);
+    rightMotor->run(motorSpeed * slower);
+    leftMotor->run(-motorSpeed);
   }
 }
 
@@ -562,13 +631,6 @@ float receiveUltrasonic() // in cm
 #endif
     return -1;
   }
-}
-
-double receiveIR()
-{
-  // return (val*(IR_HIGH_DIST-IR_LOW_DIST))/(IR_HIGH_READING-IR_LOW_READING)+IR_LOW_DIST;
-  return 0;
-  // TODO
 }
 
 int getAvgReading(int times)

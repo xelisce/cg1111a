@@ -19,7 +19,7 @@ void loop() {
     long duration = pulseIn(ULTRASONIC, HIGH, TIMEOUT);
     if (duration > 0) {
     Serial.print("distance(cm) = ");
-    float distance = (duration / 2.0 / 1000000 * SPEED_OF_SOUND * 100) - 4.5; // 4.5 is the distance from ultrasonic to robot side
+    float distance = (duration / 2.0 / 1000000 * SPEED_OF_SOUND * 100) - 2; // 4.5 is the distance from ultrasonic to robot side
     Serial.println(distance);
     }
     else {

@@ -5,49 +5,46 @@
 
 // define pins!
 #define IRPININ A1
-#define PINA 2
-#define PINB 3
+#define PIN_A A2 // the 2-to-4 decoder pin 1
+#define PIN_B A3 // the 2-to-4 decoder pin 2
 
-double getDistFromIR(int val);
+double getDistFromIR(double val);
 
 void setup() {
-    // pinMode(PINA, OUTPUT);
-    // pinMode(PINB, OUTPUT);
-    pinMode(A0, OUTPUT);
+    pinMode(PIN_A, OUTPUT);
+    pinMode(PIN_B, OUTPUT);
+    
     Serial.begin(9600);
 }
 void loop() {
-    turnOffEmitter();
-    delay(10);
-    int backgroundIR = analogRead(1);
-    delay(10);
     turnOnEmitter();
-    delay(10);
-    // int distance = getDistFromIR(analogRead(1));
-    int currentReading = analogRead(1);
-    int distance = backgroundIR - currentReading;
-    delay(10);
+    delay(2);
+    int currentReading = analogRead(IRPININ);
+    turnOffEmitter();
+    delay(2);
+    int backgroundIR = analogRead(1);
+    double rawDistance = backgroundIR - currentReading;
+    double realDistance = getDistFromIR(backgroundIR - currentReading);
     Serial.print("Background: ");
     Serial.print(backgroundIR);
     Serial.print("  |   ");
     Serial.print(currentReading);
     Serial.print("  |   ");
-    Serial.println(distance);
+    Serial.print(rawDistance);
+    Serial.print("  |   ");
+    Serial.println(realDistance);
 }
 
 void turnOnEmitter() {
-    // digitalWrite(PINA, LOW); //ir emitter
-    // digitalWrite(PINB, LOW);
-    digitalWrite(A0, LOW);
+    digitalWrite(PIN_A, LOW);
+    digitalWrite(PIN_B, LOW);
 }
 
 void turnOffEmitter() {
-    // digitalWrite(PINA, HIGH); //ir emitter
-    // digitalWrite(PINB, HIGH);
-    // digitalWrite(0, HIGH);
-    digitalWrite(A0, HIGH);
+    digitalWrite(PIN_A, HIGH);
+    digitalWrite(PIN_B, LOW);
 }
 
-double getDistFromIR(int val) {
-    return (val*(IRHIGHDIST-IRLOWDIST))/(IRHIGHREADING-IRLOWREADING)+IRLOWDIST;
+double getDistFromIR(double val) {
+    return 86.61 * pow(val, -0.615);
 }

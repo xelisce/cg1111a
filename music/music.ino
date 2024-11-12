@@ -2,7 +2,6 @@
 
 MeBuzzer buzzer;  // Define the mBot buzzer
 
-
 // Define note frequencies (in Hz) for the melody
 #define NOTE_B0 31
 #define NOTE_C1 33
