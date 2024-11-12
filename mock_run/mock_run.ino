@@ -3,8 +3,8 @@
 #include "music.h"   // self-created library to play melody
 
 // constants!
-#define PRINT 0                 // print debug statements during run
-#define PRINT_CALIBRATION 1     // print white and black calibration readings to be saved
+#define PRINT 0                 // 1 to print debug statements during run
+#define PRINT_CALIBRATION 0     // when calibrating, turn this on by using 1
 #define ULTRASONIC_TIMEOUT 2000 // max microseconds to wait for ultrasonic sensor
 #define SPEED_OF_SOUND 340
 #define ULTRASONIC_READING_INTERVAL 10     // in milliseconds
@@ -31,17 +31,18 @@ MeDCMotor rightMotor(M2);
 MeBuzzer buzzer;
 
 // function headers!
+// ultrasonic functions
 void transmitUltrasonic();
 float receiveUltrasonic();
-
-void setBalance();
-bool test_line();
-void read_color();
-
+// ir functions
 double getDistFromIR(double val);
 void turnOnEmitter();
 void turnOffEmitter();
-
+// color sensor functions
+bool test_line();
+void read_color();
+void setBalance();
+// motor functions
 void differentialSteer(double motorSpeed, double rotation);
 void stop_moving();
 void moveStraight();
@@ -134,7 +135,7 @@ void setup()
   pinMode(ULTRASONIC, INPUT);
   pinMode(PUSH_BUTTON, INPUT);
   pinMode(LDR, INPUT);
-#if PRINT
+#if PRINT || PRINT_CALIBRATION
   Serial.begin(115200);
 #endif
   digitalWrite(LED, HIGH);
@@ -143,15 +144,14 @@ void setup()
   {
     setBalance();
   }
-#if PRINT
+#if PRINT_CALIBRATION
   Serial.println("Computing Grey Diff...");
   for (int i = 0; i < 3; i++)
   {
+    greyDiff[i] = whiteArray[i] - blackArray[i];
     Serial.print(greyDiff[i]);
     Serial.print(", ");
   }
-#endif
-#if PRINT
   Serial.println();
 #endif
   digitalWrite(LED, LOW);
