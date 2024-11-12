@@ -196,20 +196,20 @@ void loop()
     {
       rotation = 0;
     }
-    else// right out of bounds, or left is closer
+    else if (right == -1 || (left < right && left > 0) || !(right > 0))// right out of bounds, or left is closer
     {
       Serial.println("Using left");
       rotation = pidControllerLeft(left);
     }
-    // else if (left == -1 || (right < left && right > 0) || !(left > 0)) // left out of bounds, or right is closer
-    // {
-    //   Serial.println("Using right");
-    //   rotation = pidControllerRight(right);
-    // }
-    // else // same
-    // {
-    //   rotation = 0;
-    // }
+     else if (left == -1 || (right < left && right > 0) || !(left > 0)) // left out of bounds, or right is closer
+     {
+       Serial.println("Using right");
+       rotation = pidControllerRight(right);
+     }
+     else // same
+     {
+       rotation = 0;
+     }
     differentialSteer(&leftMotor, &rightMotor, motorSpeed, rotation);
     if (is_at_line())
     {

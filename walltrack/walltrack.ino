@@ -61,17 +61,17 @@ unsigned long lastReadUltrasonic,
     loopInterval;
 
 
-void turnOnEmitter()
-{
-  digitalWrite(PIN_A, LOW);
-  digitalWrite(PIN_B, LOW);
+
+void turnOnEmitter() {
+    digitalWrite(PIN_A, LOW);
+    digitalWrite(PIN_B, LOW);
 }
 
-void turnOffEmitter()
-{
-  digitalWrite(PIN_A, HIGH);
-  digitalWrite(PIN_B, LOW);
+void turnOffEmitter() {
+    digitalWrite(PIN_A, HIGH);
+    digitalWrite(PIN_B, LOW);
 }
+
 
 double pidControllerRight(double reading)
 {
@@ -105,6 +105,8 @@ double getDistFromIR(double val)
   }
   else
   {
+    Serial.print("Invalid IR: ");
+    Serial.println(val);
     return -1;
   }
 }
@@ -116,10 +118,10 @@ void loop() {
   // delay(10);
   // double rotation = (left == -1 || right == -1) ? ((left - right) * 0.07) : 0; //if out of bounds, just go straight
   // differentialSteer(&leftMotor, &rightMotor, motorSpeed, rotation);
-  transmitUltrasonic();
-    left = receiveUltrasonic(); // in cm
-    lastReadUltrasonic = millis();
-    delay(10);
+//  transmitUltrasonic();
+//    left = receiveUltrasonic(); // in cm
+//    lastReadUltrasonic = millis();
+//    delay(10);
     // ir sensor
     turnOnEmitter();
     delay(2);
@@ -129,26 +131,34 @@ void loop() {
     int backgroundIR = analogRead(IR_PIN_IN);
     double rawDistance = backgroundIR - currentReading;
     right = getDistFromIR(rawDistance);
+    Serial.print("Background: ");
+    Serial.print(backgroundIR);
+    Serial.print("  |   ");
+    Serial.print(currentReading);
+    Serial.print("  |   ");
+    Serial.print(rawDistance);
+    Serial.print("  |   ");
+    Serial.println(right);
     // pid controller
-    if (right == -1) // both out of range
-    {
-      rotation = 0;
-    }
-    else// right out of bounds, or left is closer
-    {
-      Serial.println("Using left");
-      rotation = pidControllerLeft(left);
-    }
-    // else if (left == -1 || (right < left && right > 0) || !(left > 0)) // left out of bounds, or right is closer
-    // {
-    //   Serial.println("Using right");
-    //   rotation = pidControllerRight(right);
-    // }
-    // else // same
-    // {
-    //   rotation = 0;
-    // }
-    differentialSteer(&leftMotor, &rightMotor, motorSpeed, 0);
+//    if (right == -1) // both out of range
+//    {
+//      rotation = 0;
+//    }
+//    else// right out of bounds, or left is closer
+//    {
+//      Serial.println("Using left");
+//      rotation = pidControllerRight(right);
+//    }
+//    // else if (left == -1 || (right < left && right > 0) || !(left > 0)) // left out of bounds, or right is closer
+//    // {
+//    //   Serial.println("Using right");
+//    //   rotation = pidControllerRight(right);
+//    // }
+//    // else // same
+//    // {
+//    //   rotation = 0;
+//    // }
+//    differentialSteer(&leftMotor, &rightMotor, motorSpeed, rotation);
 }
 
 void transmitUltrasonic() {
@@ -194,4 +204,3 @@ float receiveUltrasonic() // in cm
     return -1;
   }
 }
-
