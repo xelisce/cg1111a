@@ -433,9 +433,9 @@ void determine_color(int current_task)
 #if PRINT
     Serial.println("PINK");
 #endif
-    delay(1000);
+    // delay(1000);
     turnLeftUTurnBlocking(&leftMotor, &rightMotor);
-    delay(1000);
+    // delay(1000);
     movement = WALLTRACK;
   }
   else if (current_task == 0)
@@ -443,9 +443,9 @@ void determine_color(int current_task)
 #if PRINT
     Serial.println("RED");
 #endif
-    delay(1000);
+    // delay(1000);
     turnLeftBlocking(&leftMotor, &rightMotor);
-    delay(1000);
+    // delay(1000);
     movement = WALLTRACK;
   }
   else if (current_task == 3)
@@ -453,9 +453,9 @@ void determine_color(int current_task)
 #if PRINT
     Serial.println("GREEN");
 #endif
-    delay(1000);
+    // delay(1000);
     turnRightBlocking(&leftMotor, &rightMotor);
-    delay(1000);
+    // delay(1000);
     movement = WALLTRACK;
   }
   else if (current_task == 2)
@@ -463,9 +463,9 @@ void determine_color(int current_task)
 #if PRINT
     Serial.println("BLUE");
 #endif
-    delay(1000);
+    // delay(1000);
     turnRightUTurnBlocking(&leftMotor, &rightMotor);
-    delay(1000);
+    // delay(1000);
     movement = WALLTRACK;
   }
   else if (current_task == 1)
@@ -473,9 +473,9 @@ void determine_color(int current_task)
 #if PRINT
     Serial.println("ORANGE");
 #endif
-    delay(1000);
+    // delay(1000);
     turnOnTheSpotBlocking(&leftMotor, &rightMotor);
-    delay(1000);
+    // delay(1000);
     movement = WALLTRACK;
   }
   else
@@ -588,11 +588,11 @@ void turnLeftBlocking(MeDCMotor *leftMotor, MeDCMotor *rightMotor)
 void turnLeftUTurnBlocking(MeDCMotor *leftMotor, MeDCMotor *rightMotor)
 {
   turnLeftBlocking(leftMotor, rightMotor);
-  delay(500);
+  // delay(500);
   moveStraightBlocking(leftMotor, rightMotor, 1400);
-  delay(500);
+  // delay(500);
   turnLeftBlocking(leftMotor, rightMotor);
-  delay(500);
+  // delay(500);
   leftMotor->stop();
   rightMotor->stop();
 }
@@ -609,11 +609,11 @@ void turnRightBlocking(MeDCMotor *leftMotor, MeDCMotor *rightMotor)
 void turnRightUTurnBlocking(MeDCMotor *leftMotor, MeDCMotor *rightMotor)
 {
   turnRightBlocking(leftMotor, rightMotor);
-  delay(500);
-  moveStraightBlocking(leftMotor, rightMotor, 1500);
-  delay(500);
+  // delay(500);
+  moveStraightBlocking(leftMotor, rightMotor, 1400);
+  // delay(500);
   turnRightBlocking(leftMotor, rightMotor);
-  delay(500);
+  // delay(500);
   leftMotor->stop();
   rightMotor->stop();
 }
