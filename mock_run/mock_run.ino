@@ -1,9 +1,9 @@
 // imports!
 #include "MeMCore.h" // mbot components
-#include "music.h" // self-created library to play melody
+#include "music.h"   // self-created library to play melody
 
 // constants!
-#define PRINT 0 // print debug statements during run
+#define PRINT 0                 // print debug statements during run
 #define PRINT_CALIBRATION 1     // print white and black calibration readings to be saved
 #define ULTRASONIC_TIMEOUT 2000 // max microseconds to wait for ultrasonic sensor
 #define SPEED_OF_SOUND 340
@@ -33,7 +33,7 @@ uint8_t motorSpeed = 255;
 uint8_t motorTurnSpeed = 255;
 
 // function headers!
-void differentialSteer(MeDCMotor *leftMotor, MeDCMotor *rightMotor, double motorSpeed, double rotation);
+void differentialSteer(double motorSpeed, double rotation);
 void transmitUltrasonic();
 float receiveUltrasonic();
 double receiveIR();
@@ -46,21 +46,22 @@ void turnOnEmitter();
 void turnOffEmitter();
 
 void stop_moving();
-void stopMotors(MeDCMotor *leftMotor, MeDCMotor *rightMotor);
-void moveStraight(MeDCMotor *leftMotor, MeDCMotor *rightMotor);
-void moveStraightBlocking(MeDCMotor *leftMotor, MeDCMotor *rightMotor, int time);
-void turnOnTheSpotBlocking(MeDCMotor *leftMotor, MeDCMotor *rightMotor);
-void turnRightUTurnBlocking(MeDCMotor *leftMotor, MeDCMotor *rightMotor);
-void turnRightBlocking(MeDCMotor *leftMotor, MeDCMotor *rightMotor);
-void turnLeftBlocking(MeDCMotor *leftMotor, MeDCMotor *rightMotor);
-void turnLeftUTurnBlocking(MeDCMotor *leftMotor, MeDCMotor *rightMotor);
+void stopMotors();
+void moveStraight();
+void moveStraightBlocking(int time);
+void turnOnTheSpotBlocking();
+void turnRightUTurnBlocking();
+void turnRightBlocking();
+void turnLeftBlocking();
+void turnLeftUTurnBlocking();
 
 // variables!
 double currentError = 0,
        rotation = 0;
 double IRKp = 0.06,
+       IRKd = 0,
        UltrasonicKp = 0.06,
-       kd = 0,
+       UltrasonicKd = 0,
        p = 0,
        d = 0;
 double left = 0,
@@ -90,7 +91,7 @@ float colourArray[] = {0, 0, 0};
 float whiteArray[] = {841.00, 915.00, 825.00}; // change this after calibration
 float blackArray[] = {634.00, 553.00, 573.00}; // change this after calibration
 float greyDiff[] = {whiteArray[0] - blackArray[0], whiteArray[1] - blackArray[1], whiteArray[2] - blackArray[2]};
-char colourStr[3][5] = {"R = ", "G = ", "B = "};
+char RGBColourStr[3][5] = {"R = ", "G = ", "B = "};
 
 struct Color
 {
@@ -106,25 +107,19 @@ float euclideanDistance(const Color &c1, const Color &c2)
 }
 
 // Function to find the closest predefined color (returns an integer code for the color)
+Color red = {273, 100, 82};
+Color orange = {282, 170, 86};
+Color blue = {153, 218, 236};
+Color green = {163, 222, 126};
+Color pink = {287, 231, 227};
+Color white = {283, 257, 264};
+Color colors[6] = {red, orange, blue, green, pink, white}; // array of predefined colors
+char sensedRGBColourStr[6][8] = {"    RED", " ORANGE", "   BLUE", "  GREEN", "   PINK", "  WHITE"};
 int closestColor(const Color &inputColor)
 {
   // Define RGB values for the predefined colors
-  Color red = {273, 100, 82};
-  Color orange = {282, 170, 86};
-  Color blue = {153, 218, 236};
-  Color green = {163, 222, 126};
-  Color pink = {287, 231, 227};
-  Color white = {283, 257, 264};
-
-  // Array of predefined colors
-  Color colors[] = {red, orange, blue, green, pink, white};
-
-  // Index of the closest color (integer code)
-  int closestColorIndex = 0;
-
-  // Initial minimum distance, assuming the first color (red) is the closest
-  float minDistance = euclideanDistance(inputColor, colors[0]);
-
+  int closestColorIndex = 0; // index of the closest color
+  float minDistance = euclideanDistance(inputColor, colors[0]); // initial minimum distance, assuming the first color (red) is the closest
   // Compare input color with all predefined colors
   for (int i = 1; i < 6; i++)
   {
@@ -135,7 +130,10 @@ int closestColor(const Color &inputColor)
       closestColorIndex = i;
     }
   }
-
+  #if PRINT
+  Serial.print("Sensed: ");
+  Serial.println(sensedRGBColourStr[closestColorIndex]);
+  #endif
   return closestColorIndex;
 }
 
@@ -173,57 +171,57 @@ void setup()
 
 void loop()
 {
-#if PRINT
-  Serial.print("Loop time: ");
-  Serial.println(millis() - lastLoopTime);
-#endif
   if (movement == WALLTRACK)
   {
+
 #if PRINT
     Serial.println("WALLTRACKING");
 #endif
+
     // ultrasonic
-    // if ((millis() - lastReadUltrasonic) > 10){
-    transmitUltrasonic();
-    left = receiveUltrasonic(); // in cm
-    lastReadUltrasonic = millis();
-    delay(10);
-    // }
-    lastLoopTime = millis();
+    if ((millis() - lastReadUltrasonic) > 10){
+      transmitUltrasonic();
+      left = receiveUltrasonic(); // in cm
+      lastReadUltrasonic = millis();
+      delay(10);
+    }
+
     // ir sensor
     turnOnEmitter();
     delay(2);
-    // TODO
     int currentReading = analogRead(IR_PIN_IN);
     turnOffEmitter();
     delay(2);
-    // TODO
     int backgroundIR = analogRead(IR_PIN_IN);
     double rawDistance = backgroundIR - currentReading;
     right = getDistFromIR(rawDistance);
-    // pid controller
+
+    // computing steer rate with PD controller
     if (left == -1 && right == -1) // both out of range
     {
       digitalWrite(LED, LOW);
       rotation = 0;
     }
-    else if (right == -1 || (left < right && left > 0) || !(right > 0)) // right out of bounds, or left is closer
+    else if (right == -1 || (left < right && left > 0) || !(right > 0)) // right out of bounds or invalid, or left is closer
     {
       digitalWrite(LED, LOW);
-      rotation = pidControllerLeft(left);
+      rotation = PDController(left, false); // use left to wall track
     }
-    else if (left == -1 || (right < left && right > 0) || !(left > 0)) // left out of bounds, or right is closer
+    else if (left == -1 || (right < left && right > 0) || !(left > 0)) // left out of bounds or invalid, or right is closer
     {
-      digitalWrite(LED, HIGH);
-      rotation = pidControllerRight(right);
+      digitalWrite(LED, HIGH); // turn on LED when IR tracking
+      rotation = PDController(right, true); // use right to wall track
     }
-    else // same
+    else // both same value
     {
       digitalWrite(LED, LOW);
       rotation = 0;
     }
-    differentialSteer(&leftMotor, &rightMotor, motorSpeed, rotation);
-    test_line();
+
+    // complete movement
+    differentialSteer(motorSpeed, rotation); // move the motors with steer rate
+    test_line(); // test for double black
+
 #if PRINT
     Serial.print("Loop time: ");
     Serial.print(loopInterval);
@@ -238,15 +236,15 @@ void loop()
     Serial.print(" | Rotation: ");
     Serial.print(rotation);
 #endif
+
   }
   else if (movement == COLOR_SENSE)
   {
-    stop_moving(&leftMotor, &rightMotor);
+    stop_moving();
 #if PRINT
     Serial.println("Sensing color");
 #endif
     read_color(); // Use the loop in led.ino to make it sense the colour
-    // determine_color(&hsv);
     int current_task = closestColor(currentColor);
     determine_color(current_task);
 #if PRINT
@@ -259,7 +257,7 @@ void loop()
 #if PRINT
     Serial.println("Sensed white - STOPPED");
 #endif
-    stop_moving(&leftMotor, &rightMotor);
+    stop_moving();
     playMelody(&buzzer);
   }
   else
@@ -281,7 +279,7 @@ bool test_line() // sensing double black
   sensor_state = lineFinder.readSensors();
   if (sensor_state == S1_IN_S2_IN)
   {
-    stop_moving(&leftMotor, &rightMotor); // stop moving while sensing
+    stop_moving(); // stop moving while sensing
     movement = COLOR_SENSE;
 #if PRINT
     Serial.println("DOUBLE BLACK SENSED");
@@ -303,16 +301,12 @@ void turnOffEmitter()
   digitalWrite(PIN_A, HIGH);
   digitalWrite(PIN_B, LOW);
 }
+
 double getDistFromIR(double val)
 {
   if (val > 22)
   {
-    double result = 100.9 * pow(val, -0.641) + 2;
-#if PRINT
-// Serial.print("IR readings: ");
-// Serial.println(result);
-#endif
-    return result;
+    return (val > 22) ? (100.9 * pow(val, -0.641) + 2) : -1;
   }
   else
   {
@@ -320,24 +314,23 @@ double getDistFromIR(double val)
   }
 }
 
-double pidControllerRight(double reading)
+double PDController(double reading, bool isRight)
 {
-  // loopInterval = millis() - lastLoopTime;
-  // lastLoopTime = millis();
-  return (reading - 10.55) * IRKp; // setpoint
-  // d = (currentError / loopInterval) * kd;
-  // currentError = p + d;
-  // return p;
-}
-
-double pidControllerLeft(double reading)
-{
-  // loopInterval = millis() - lastLoopTime;
-  // lastLoopTime = millis();
-  return (8.06 - reading) * UltrasonicKp; // setpoint
-  // d = (currentError / loopInterval) * kd;
-  // currentError = p + d;
-  // return p;
+  loopInterval = millis() - lastLoopTime;
+  lastLoopTime = millis();
+  if (isRight) // IR
+  {
+    currentError = (reading - 10.55);
+    p = currentError * IRKp;
+    d = (currentError / loopInterval) * IRKd;
+  }
+  else // Ultrasonic
+  {
+    currentError = (8.06 - reading);
+    p = currentError * UltrasonicKp;
+    d = (currentError / loopInterval) * UltrasonicKd;
+  }
+  return p + d;
 }
 
 void read_color()
@@ -373,11 +366,11 @@ void read_color()
   currentColor.g = colourArray[1];
   currentColor.b = colourArray[2];
 #if PRINT
-  Serial.print(colourStr[0]);
+  Serial.print(RGBColourStr[0]);
   Serial.println(int(colourArray[0]));
-  Serial.print(colourStr[1]);
+  Serial.print(RGBColourStr[1]);
   Serial.println(int(colourArray[1]));
-  Serial.print(colourStr[2]);
+  Serial.print(RGBColourStr[2]);
   Serial.println(int(colourArray[2]));
 #endif
 }
@@ -396,7 +389,7 @@ void determine_color(int current_task)
 #if PRINT
     Serial.println("PINK");
 #endif
-    turnLeftUTurnBlocking(&leftMotor, &rightMotor);
+    turnLeftUTurnBlocking();
     movement = WALLTRACK;
   }
   else if (current_task == 0)
@@ -404,7 +397,7 @@ void determine_color(int current_task)
 #if PRINT
     Serial.println("RED");
 #endif
-    turnLeftBlocking(&leftMotor, &rightMotor);
+    turnLeftBlocking();
     movement = WALLTRACK;
   }
   else if (current_task == 3)
@@ -412,7 +405,7 @@ void determine_color(int current_task)
 #if PRINT
     Serial.println("GREEN");
 #endif
-    turnRightBlocking(&leftMotor, &rightMotor);
+    turnRightBlocking();
     movement = WALLTRACK;
   }
   else if (current_task == 2)
@@ -420,7 +413,7 @@ void determine_color(int current_task)
 #if PRINT
     Serial.println("BLUE");
 #endif
-    turnRightUTurnBlocking(&leftMotor, &rightMotor);
+    turnRightUTurnBlocking();
     movement = WALLTRACK;
   }
   else if (current_task == 1)
@@ -428,7 +421,7 @@ void determine_color(int current_task)
 #if PRINT
     Serial.println("ORANGE");
 #endif
-    turnOnTheSpotBlocking(&leftMotor, &rightMotor);
+    turnOnTheSpotBlocking();
     movement = WALLTRACK;
   }
   else
@@ -440,16 +433,16 @@ void determine_color(int current_task)
   }
 }
 
-void stop_moving(MeDCMotor *leftMotor, MeDCMotor *rightMotor)
+void stop_moving()
 {
-  leftMotor->stop();
-  rightMotor->stop();
+  leftMotor.stop();
+  rightMotor.stop();
 }
 
 void setBalance()
 {
 // set white balance
-#if PRINT
+#if PRINT_CALIBRATION
   Serial.println("Put White Sample For Calibration ...");
 #endif
   delay(5000); // delay for five seconds for getting sample ready
@@ -477,7 +470,7 @@ void setBalance()
   digitalWrite(PIN_A, LOW);
   digitalWrite(PIN_B, LOW);
   delay(RGBWait);
-#if PRINT
+#if PRINT_CALIBRATION
   for (int i = 0; i <= 2; i++)
   {
     Serial.print(whiteArray[i]);
@@ -511,7 +504,7 @@ void setBalance()
   digitalWrite(PIN_A, LOW);
   digitalWrite(PIN_B, LOW);
   delay(RGBWait);
-#if PRINT
+#if PRINT_CALIBRATION
   for (int i = 0; i <= 2; i++)
   {
     Serial.print(blackArray[i]);
@@ -534,118 +527,108 @@ void transmitUltrasonic()
   digitalWrite(ULTRASONIC, LOW);
 }
 
-void gradualSpeed(MeDCMotor *leftMotor, MeDCMotor *rightMotor, int targetSpeed, int stepDelay, bool isTurn, bool isRightTurn = false)
+void gradualSpeed(int targetSpeed, int stepDelay, bool isTurn, bool isRightTurn = false)
 {
-  static int currentSpeed = 0; // Keeps track of the current speed
-
-  // Gradually accelerate or decelerate to targetSpeed
+  int currentSpeed = 0; //! changed from static
+  // gradually accelerate or decelerate to targetSpeed
   while (currentSpeed != targetSpeed)
   {
     if (currentSpeed < targetSpeed)
       currentSpeed++;
     else if (currentSpeed > targetSpeed)
       currentSpeed--;
-
-    // Adjust motor speed for turning or straight movement
     if (isTurn)
     {
-      if (isRightTurn)
+      if (isRightTurn) // for turning right
       {
-        rightMotor->run(-currentSpeed * RIGHT_MOTOR_BIAS);
-        leftMotor->run(-currentSpeed * LEFT_MOTOR_BIAS);
+        rightMotor.run(-currentSpeed * RIGHT_MOTOR_BIAS);
+        leftMotor.run(-currentSpeed * LEFT_MOTOR_BIAS);
       }
-      else
+      else // for turning left
       {
-        rightMotor->run(currentSpeed * RIGHT_MOTOR_BIAS);
-        leftMotor->run(currentSpeed * LEFT_MOTOR_BIAS);
+        rightMotor.run(currentSpeed * RIGHT_MOTOR_BIAS);
+        leftMotor.run(currentSpeed * LEFT_MOTOR_BIAS);
       }
     }
-    else
+    else // for moving straight
     {
-      rightMotor->run(currentSpeed * RIGHT_MOTOR_BIAS_FOR_STRAIGHT);
-      leftMotor->run(-currentSpeed * LEFT_MOTOR_BIAS);
+      rightMotor.run(currentSpeed * RIGHT_MOTOR_BIAS_FOR_STRAIGHT);
+      leftMotor.run(-currentSpeed * LEFT_MOTOR_BIAS);
     }
     delayMicroseconds(stepDelay);
   }
 }
 
-void turnLeftBlocking(MeDCMotor *leftMotor, MeDCMotor *rightMotor)
+void turnLeftBlocking()
 {
-  // Accelerate to target speed
-  gradualSpeed(leftMotor, rightMotor, motorSpeed, 400, true, false);
-  delay(295); // Maintain full speed for the duration of the turn
-  // Decelerate to stop
-  gradualSpeed(leftMotor, rightMotor, 0, 400, true, false);
+  gradualSpeed(motorSpeed, 400, true, false); // accelerate to target speed
+  delay(295); // maintain full speed for the duration of the turn
+  gradualSpeed(0, 400, true, false); // decelerate to stop
 }
 
-void turnRightBlocking(MeDCMotor *leftMotor, MeDCMotor *rightMotor)
+void turnRightBlocking()
 {
-  // Accelerate to target speed
-  gradualSpeed(leftMotor, rightMotor, motorSpeed, 400, true, true);
-  delay(295); // Maintain full speed for the duration of the turn
-  // Decelerate to stop
-  gradualSpeed(leftMotor, rightMotor, 0, 400, true, true);
+  gradualSpeed(motorSpeed, 400, true, true); // accelerate to target speed
+  delay(295); // maintain full speed for the duration of the turn
+  gradualSpeed(0, 400, true, true); // decelerate to stop
 }
 
-void turnLeftUTurnBlocking(MeDCMotor *leftMotor, MeDCMotor *rightMotor)
+void turnOnTheSpotBlocking()
 {
-  turnLeftBlocking(leftMotor, rightMotor);
-  moveStraightBlocking(leftMotor, rightMotor, 760);
-  turnLeftBlocking(leftMotor, rightMotor);
-  leftMotor->stop();
-  rightMotor->stop();
+  gradualSpeed(motorSpeed, 400, true); // accelerate to target speed
+  delay(620); // maintain full speed for the duration of the turn
+  gradualSpeed(0, 400, true, false); // decelerate to stop
 }
 
-void turnRightUTurnBlocking(MeDCMotor *leftMotor, MeDCMotor *rightMotor)
+void moveStraightBlocking(int time)
 {
-  turnRightBlocking(leftMotor, rightMotor);
-  moveStraightBlocking(leftMotor, rightMotor, 730);
-  turnRightBlocking(leftMotor, rightMotor);
-  leftMotor->stop();
-  rightMotor->stop();
+  gradualSpeed(motorSpeed, 400, false); // accelerate to target speed
+  delay(time); // maintain full speed for the specified duration
+  gradualSpeed(0, 400, false); // decelerate to stop
 }
 
-void turnOnTheSpotBlocking(MeDCMotor *leftMotor, MeDCMotor *rightMotor)
+void turnLeftUTurnBlocking()
 {
-  gradualSpeed(leftMotor, rightMotor, motorSpeed, 400, true);
-  delay(620); // Maintain full speed for the duration of the turn
-  // Decelerate to stop
-  gradualSpeed(leftMotor, rightMotor, 0, 400, true, false);
+  turnLeftBlocking();
+  moveStraightBlocking(760);
+  turnLeftBlocking();
+  leftMotor.stop();
+  rightMotor.stop();
 }
 
-void moveStraightBlocking(MeDCMotor *leftMotor, MeDCMotor *rightMotor, int time)
+void turnRightUTurnBlocking()
 {
-  // Accelerate to target speed
-  gradualSpeed(leftMotor, rightMotor, motorSpeed, 400, false);
-  delay(time); // Maintain full speed for the specified duration
-  // Decelerate to stop
-  gradualSpeed(leftMotor, rightMotor, 0, 400, false);
+  turnRightBlocking();
+  moveStraightBlocking(730);
+  turnRightBlocking();
+  leftMotor.stop();
+  rightMotor.stop();
 }
 
-void moveStraight(MeDCMotor *leftMotor, MeDCMotor *rightMotor)
+void moveStraight()
 {
-  rightMotor->run(motorSpeed * RIGHT_MOTOR_BIAS);
-  leftMotor->run(-motorSpeed * LEFT_MOTOR_BIAS);
+  rightMotor.run(motorSpeed * RIGHT_MOTOR_BIAS);
+  leftMotor.run(-motorSpeed * LEFT_MOTOR_BIAS);
 }
 
-void stopMotors(MeDCMotor *leftMotor, MeDCMotor *rightMotor)
+void stopMotors()
 {
-  leftMotor->stop();
-  rightMotor->stop();
+  leftMotor.stop();
+  rightMotor.stop();
 }
 
-void differentialSteer(MeDCMotor *leftMotor, MeDCMotor *rightMotor, double motorSpeed, double rotation)
+void differentialSteer(double motorSpeed, double rotation)
 {
   double slower = 1 - 2 * fabs(rotation);
   if (rotation < 0)
   { // turning left
-    rightMotor->run(motorSpeed * RIGHT_MOTOR_BIAS);
-    leftMotor->run(-motorSpeed * LEFT_MOTOR_BIAS * slower);
+    rightMotor.run(motorSpeed * RIGHT_MOTOR_BIAS);
+    leftMotor.run(-motorSpeed * LEFT_MOTOR_BIAS * slower);
   }
   else
   { // turning right
-    rightMotor->run(motorSpeed * RIGHT_MOTOR_BIAS * slower);
-    leftMotor->run(-motorSpeed * LEFT_MOTOR_BIAS);
+    rightMotor.run(motorSpeed * RIGHT_MOTOR_BIAS * slower);
+    leftMotor.run(-motorSpeed * LEFT_MOTOR_BIAS);
   }
 }
 
