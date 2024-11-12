@@ -11,7 +11,6 @@ uint8_t motorSpeed = 255;
 void gradualSpeedTurn(MeDCMotor *leftMotor, MeDCMotor *rightMotor, int targetSpeed, int stepDelay, bool isRightTurn)
 {
   static int currentSpeed = 0; // Keeps track of the current speed
-  
   // Gradually accelerate or decelerate to targetSpeed
   while (currentSpeed != targetSpeed)
   {
@@ -19,7 +18,6 @@ void gradualSpeedTurn(MeDCMotor *leftMotor, MeDCMotor *rightMotor, int targetSpe
       currentSpeed++;
     else if (currentSpeed > targetSpeed)
       currentSpeed--;
-
     // Adjust motor direction and speed for turning
     if (isRightTurn) {
       rightMotor->run(-currentSpeed * RIGHT_MOTOR_BIAS);
@@ -28,7 +26,6 @@ void gradualSpeedTurn(MeDCMotor *leftMotor, MeDCMotor *rightMotor, int targetSpe
       rightMotor->run(currentSpeed * RIGHT_MOTOR_BIAS);
       leftMotor->run(currentSpeed * LEFT_MOTOR_BIAS);
     }
-
     delayMicroseconds(stepDelay);
   }
 }
@@ -51,6 +48,14 @@ void turnRightBlocking(MeDCMotor *leftMotor, MeDCMotor *rightMotor)
   gradualSpeedTurn(leftMotor, rightMotor, 0, 400, true);
 }
 
+void turnOnTheSpotBlocking(MeDCMotor *leftMotor, MeDCMotor *rightMotor)
+{
+  gradualSpeedTurn(leftMotor, rightMotor, motorSpeed, 400, true, true);
+  delay(620); // Maintain full speed for the duration of the turn
+  // Decelerate to stop
+  gradualSpeedTurn(leftMotor, rightMotor, 0, 400, true, true);
+}
+
 void setup()
 {
   delay(1000); // Initial delay before starting
@@ -59,8 +64,5 @@ void setup()
 void loop()
 {
   delay(1000);
-  turnLeftBlocking(&leftMotor, &rightMotor); // Turn left with acceleration and deceleration
-  delay(1000);
-  turnRightBlocking(&leftMotor, &rightMotor); // Turn right with acceleration and deceleration
-  delay(1000);
+  turnOnTheSpotBlocking(&leftMotor, &rightMotor);
 }

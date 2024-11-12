@@ -1,19 +1,21 @@
 // imports!
-#include "MeMCore.h" // mbot components
-#include "music.h" // self-created library to play melody
+#include "MeMCore.h"
 
 // constants!
-#define PRINT 0 // print debug statements during run
-#define PRINT_CALIBRATION 1     // print white and black calibration readings to be saved
-#define ULTRASONIC_TIMEOUT 2000 // max microseconds to wait for ultrasonic sensor
+#define PRINT 0
+#define TIMEOUT 2000 // Max microseconds to wait; choose according to max distance of wall
 #define SPEED_OF_SOUND 340
-#define ULTRASONIC_READING_INTERVAL 10     // in milliseconds
-#define RGBWait 200                        // in milliseconds
-#define LDRWait 10                         // in milliseconds
-#define TURNING_TIME 375                   // in milliseconds
-#define LEFT_MOTOR_BIAS 1                  // from 0 to 1, multiplied to motor, because robot doesn't move straight
-#define RIGHT_MOTOR_BIAS 0.75              // from 0 to 1, multiplied to motor, because robot doesn't move straight
-#define RIGHT_MOTOR_BIAS_FOR_STRAIGHT 0.77 // from 0 to 1, for moving straight only, no turns
+#define IR_LOW_READING 0
+#define IR_HIGH_READING 1000
+#define IR_LOW_DIST 0                  // mm
+#define IR_HIGH_DIST 100               // mm
+#define ULTRASONIC_READING_INTERVAL 10 // millis
+#define RGBWait 200                    // in milliseconds
+#define LDRWait 10                     // in milliseconds
+#define TURNING_TIME 375               // in milliseconds
+#define LEFT_MOTOR_BIAS 1              // from 0 to 1, because robot doesn't move straight
+#define RIGHT_MOTOR_BIAS 0.75          // from 0 to 1, because robot doesn't move straight
+#define MOTOR_BIAS_MORE_RIGHT 0.77
 
 // pins!
 #define ULTRASONIC 12
@@ -24,11 +26,161 @@
 #define PIN_A A2 // the 2-to-4 decoder pin 1
 #define PIN_B A3 // the 2-to-4 decoder pin 2
 
+// music
+MeBuzzer buzzer; // Define the mBot buzzer
+// Define note frequencies (in Hz) for the melody
+#define NOTE_B0 31
+#define NOTE_C1 33
+#define NOTE_CS1 35
+#define NOTE_D1 37
+#define NOTE_DS1 39
+#define NOTE_E1 41
+#define NOTE_F1 44
+#define NOTE_FS1 46
+#define NOTE_G1 49
+#define NOTE_GS1 52
+#define NOTE_A1 55
+#define NOTE_AS1 58
+#define NOTE_B1 62
+#define NOTE_C2 65
+#define NOTE_CS2 69
+#define NOTE_D2 73
+#define NOTE_DS2 78
+#define NOTE_E2 82
+#define NOTE_F2 87
+#define NOTE_FS2 93
+#define NOTE_G2 98
+#define NOTE_GS2 104
+#define NOTE_A2 110
+#define NOTE_AS2 117
+#define NOTE_B2 123
+#define NOTE_C3 131
+#define NOTE_CS3 139
+#define NOTE_D3 147
+#define NOTE_DS3 156
+#define NOTE_E3 165
+#define NOTE_F3 175
+#define NOTE_FS3 185
+#define NOTE_G3 196
+#define NOTE_GS3 208
+#define NOTE_A3 220
+#define NOTE_AS3 233
+#define NOTE_B3 247
+#define NOTE_C4 262
+#define NOTE_CS4 277
+#define NOTE_D4 294
+#define NOTE_DS4 311
+#define NOTE_E4 330
+#define NOTE_F4 349
+#define NOTE_FS4 370
+#define NOTE_G4 392
+#define NOTE_GS4 415
+#define NOTE_A4 440
+#define NOTE_AS4 466
+#define NOTE_B4 494
+#define NOTE_C5 523
+#define NOTE_CS5 554
+#define NOTE_D5 587
+#define NOTE_DS5 622
+#define NOTE_E5 659
+#define NOTE_F5 698
+#define NOTE_FS5 740
+#define NOTE_G5 784
+#define NOTE_GS5 831
+#define NOTE_A5 880
+#define NOTE_AS5 932
+#define NOTE_B5 988
+#define NOTE_C6 1047
+#define NOTE_CS6 1109
+#define NOTE_D6 1175
+#define NOTE_DS6 1245
+#define NOTE_E6 1319
+#define NOTE_F6 1397
+#define NOTE_FS6 1480
+#define NOTE_G6 1568
+#define NOTE_GS6 1661
+#define NOTE_A6 1760
+#define NOTE_AS6 1865
+#define NOTE_B6 1976
+#define NOTE_C7 2093
+#define NOTE_CS7 2217
+#define NOTE_D7 2349
+#define NOTE_DS7 2489
+#define NOTE_E7 2637
+#define NOTE_F7 2794
+#define NOTE_FS7 2960
+#define NOTE_G7 3136
+#define NOTE_GS7 3322
+#define NOTE_A7 3520
+#define NOTE_AS7 3729
+#define NOTE_B7 3951
+#define NOTE_C8 4186
+#define NOTE_CS8 4435
+#define NOTE_D8 4699
+#define NOTE_DS8 4978
+
+int melody[] = {
+    NOTE_D4,
+    NOTE_F4,
+    NOTE_D4,
+    NOTE_D4,
+    NOTE_G4,
+    NOTE_D4,
+    NOTE_C4,
+    NOTE_D4,
+    NOTE_A4,
+    NOTE_D4,
+    NOTE_D4,
+    NOTE_AS4,
+    NOTE_A4,
+    NOTE_F4, // Check A5 and B5 for an error
+    NOTE_D4,
+    NOTE_A4,
+    NOTE_D5,
+    NOTE_D4,
+    NOTE_C4,
+    NOTE_C4,
+    NOTE_A3,
+    NOTE_E4,
+    NOTE_D4,
+    0,
+    NOTE_D4,
+    NOTE_D4,
+};
+
+int noteDurations[] = {
+    4,
+    6,
+    8,
+    16,
+    8,
+    8,
+    8,
+    4,
+    6,
+    8,
+    16,
+    8,
+    8,
+    8,
+    8,
+    8,
+    8,
+    16,
+    8,
+    16,
+    8,
+    8,
+    8,
+    2,
+    4,
+    4,
+};
+
 // objects!
 MeLineFollower lineFinder(PORT_2); // assigning lineFinder to RJ25 port 2
 MeDCMotor leftMotor(M1);           // assigning leftMotor to port M1
 MeDCMotor rightMotor(M2);
-MeBuzzer buzzer;
 uint8_t motorSpeed = 255;
 uint8_t motorTurnSpeed = 255;
 
@@ -38,7 +190,7 @@ void transmitUltrasonic();
 float receiveUltrasonic();
 double receiveIR();
 void setBalance();
-bool test_line();
+bool is_at_line();
 void hsv_converter(struct hsv_type *hsv, double r, double g, double b);
 void read_color();
 double getDistFromIR(double val);
@@ -89,7 +241,7 @@ hsv_type hsv;
 float colourArray[] = {0, 0, 0};
 float whiteArray[] = {841.00, 915.00, 825.00}; // change this after calibration
 float blackArray[] = {634.00, 553.00, 573.00}; // change this after calibration
-float greyDiff[] = {whiteArray[0] - blackArray[0], whiteArray[1] - blackArray[1], whiteArray[2] - blackArray[2]};
+float greyDiff[] = {0, 0, 0};
 char colourStr[3][5] = {"R = ", "G = ", "B = "};
 
 struct Color
@@ -148,9 +300,7 @@ void setup()
   pinMode(ULTRASONIC, INPUT);
   pinMode(PUSH_BUTTON, INPUT);
   pinMode(LDR, INPUT);
-#if PRINT
   Serial.begin(115200);
-#endif
   digitalWrite(LED, HIGH);
   lastReadUltrasonic = millis();
   if (analogRead(A7) < 100) // calibrate if button is held on robot startup
@@ -159,12 +309,15 @@ void setup()
   }
 #if PRINT
   Serial.println("Computing Grey Diff...");
+#endif
   for (int i = 0; i < 3; i++)
   {
+    greyDiff[i] = whiteArray[i] - blackArray[i];
+#if PRINT
     Serial.print(greyDiff[i]);
     Serial.print(", ");
-  }
 #endif
+  }
 #if PRINT
   Serial.println();
 #endif
@@ -173,10 +326,11 @@ void setup()
 
 void loop()
 {
+
 #if PRINT
-  Serial.print("Loop time: ");
-  Serial.println(millis() - lastLoopTime);
 #endif
+Serial.print("Loop time: ");
+Serial.println(millis() - lastLoopTime);
   if (movement == WALLTRACK)
   {
 #if PRINT
@@ -187,9 +341,10 @@ void loop()
     transmitUltrasonic();
     left = receiveUltrasonic(); // in cm
     lastReadUltrasonic = millis();
+    Serial.print("ULTRASONIC");
     delay(10);
     // }
-    lastLoopTime = millis();
+lastLoopTime = millis();
     // ir sensor
     turnOnEmitter();
     delay(2);
@@ -210,11 +365,13 @@ void loop()
     else if (right == -1 || (left < right && left > 0) || !(right > 0)) // right out of bounds, or left is closer
     {
       digitalWrite(LED, LOW);
+      Serial.println("Using left");
       rotation = pidControllerLeft(left);
     }
     else if (left == -1 || (right < left && right > 0) || !(left > 0)) // left out of bounds, or right is closer
     {
       digitalWrite(LED, HIGH);
+      Serial.println("Using right");
       rotation = pidControllerRight(right);
     }
     else // same
@@ -223,7 +380,14 @@ void loop()
       rotation = 0;
     }
     differentialSteer(&leftMotor, &rightMotor, motorSpeed, rotation);
-    test_line();
+    if (is_at_line())
+    {
+#if PRINT
+      Serial.print("CONFIRMED DOUBLE BLACK");
+#endif
+      stop_moving(&leftMotor, &rightMotor);
+      movement = COLOR_SENSE;
+    }
 #if PRINT
     Serial.print("Loop time: ");
     Serial.print(loopInterval);
@@ -245,28 +409,35 @@ void loop()
 #if PRINT
     Serial.println("Sensing color");
 #endif
-    read_color(); // Use the loop in led.ino to make it sense the colour
+    read_color(&hsv); // Use the loop in led.ino to make it sense the colour
     // determine_color(&hsv);
     int current_task = closestColor(currentColor);
     determine_color(current_task);
-#if PRINT
     Serial.print("Current Task: ");
     Serial.println(current_task);
-#endif
   }
   else if (movement == STOP)
   {
-#if PRINT
     Serial.println("Sensed white - STOPPED");
-#endif
     stop_moving(&leftMotor, &rightMotor);
-    playMelody(&buzzer);
+    // movement = WALLTRACK;
+
+    // Loop through the notes in the melody
+    for (int thisNote = 0; thisNote < sizeof(melody) / sizeof(int); thisNote++)
+    {
+      int noteDuration = 1000 / noteDurations[thisNote];
+      buzzer.tone(melody[thisNote], noteDuration); // Play note on mBot buzzer
+      // Pause between notes
+      int pauseBetweenNotes = noteDuration * 1.30; // Reduce the 1.30 for a faster tempo
+      delay(pauseBetweenNotes);
+
+      // Stop the tone to create a silence between notes
+      buzzer.noTone();
+    }
   }
   else
   {
-#if PRINT
     Serial.print("ERROR");
-#endif
   }
 
 #if PRINT
@@ -275,22 +446,64 @@ void loop()
 #endif
 }
 
-bool test_line() // sensing double black
+void hsv_converter(struct hsv_type *hsv, double r, double g, double b) // to convert rgb to hsv color space
 {
-  uint8_t sensor_state;
-  sensor_state = lineFinder.readSensors();
-  if (sensor_state == S1_IN_S2_IN)
+  r /= 255;
+  b /= 255;
+  g /= 255;
+  double cmax = max(r, max(g, b));
+  double cmin = min(r, min(g, b));
+  double diff = cmax - cmin;
+  hsv->h = -1;
+  hsv->s = -1;
+  if (cmax == cmin)
   {
-    stop_moving(&leftMotor, &rightMotor); // stop moving while sensing
-    movement = COLOR_SENSE;
-#if PRINT
-    Serial.println("DOUBLE BLACK SENSED");
-#endif
+    hsv->h = 0;
+  }
+  else if (cmax == r)
+  {
+    hsv->h = fmod(60 * ((g - b) / diff) + 360, 360);
+  }
+  else if (cmax == g)
+  {
+    hsv->h = fmod(60 * ((b - r) / diff) + 120, 360);
+  }
+  else if (cmax == b)
+  {
+    hsv->h = fmod(60 * ((r - g) / diff) + 240, 360);
+  }
+  if (cmax == 0)
+  {
+    hsv->s = 0;
   }
   else
   {
-    return false;
+    hsv->s = (diff / cmax) * 100;
   }
+  hsv->v = cmax * 100;
+}
+
+bool is_at_line() // sensing double black
+{
+  uint8_t sensor_state;
+  for (int i = 0; i < 3; i++) // repeat reading 3 times to prevent false readings
+  {
+    sensor_state = lineFinder.readSensors();
+    if (sensor_state == S1_IN_S2_IN)
+    {
+      stop_moving(&leftMotor, &rightMotor); // stop moving while sensing
+      delayMicroseconds(10);
+#if PRINT
+      Serial.print(i);
+      Serial.println("DOUBLE BLACK");
+#endif
+    }
+    else
+    {
+      return false;
+    }
+  }
+  return true;
 }
 void turnOnEmitter()
 {
@@ -308,10 +521,10 @@ double getDistFromIR(double val)
   if (val > 22)
   {
     double result = 100.9 * pow(val, -0.641) + 2;
-#if PRINT
-// Serial.print("IR readings: ");
-// Serial.println(result);
-#endif
+    #if PRINT
+    // Serial.print("IR readings: ");
+    // Serial.println(result);
+    #endif
     return result;
   }
   else
@@ -340,9 +553,10 @@ double pidControllerLeft(double reading)
   // return p;
 }
 
-void read_color()
+void read_color(struct hsv_type *hsv)
 {
   // FOR RED
+  Serial.print(colourStr[0]);
   digitalWrite(PIN_A, HIGH);
   digitalWrite(PIN_B, LOW);
   delay(RGBWait);
@@ -351,7 +565,9 @@ void read_color()
   digitalWrite(PIN_A, LOW);
   digitalWrite(PIN_B, LOW);
   delay(RGBWait);
+  Serial.println(int(colourArray[0]));
   // FOR GREEN
+  Serial.print(colourStr[1]);
   digitalWrite(PIN_A, LOW);
   digitalWrite(PIN_B, HIGH);
   delay(RGBWait);
@@ -360,7 +576,9 @@ void read_color()
   digitalWrite(PIN_A, LOW);
   digitalWrite(PIN_B, LOW);
   delay(RGBWait);
+  Serial.println(int(colourArray[1]));
   // FOR BLUE
+  Serial.print(colourStr[2]);
   digitalWrite(PIN_A, HIGH);
   digitalWrite(PIN_B, HIGH);
   delay(RGBWait);
@@ -369,17 +587,10 @@ void read_color()
   digitalWrite(PIN_A, LOW);
   digitalWrite(PIN_B, LOW);
   delay(RGBWait);
+  Serial.println(int(colourArray[2]));
   currentColor.r = colourArray[0];
   currentColor.g = colourArray[1];
   currentColor.b = colourArray[2];
-#if PRINT
-  Serial.print(colourStr[0]);
-  Serial.println(int(colourArray[0]));
-  Serial.print(colourStr[1]);
-  Serial.println(int(colourArray[1]));
-  Serial.print(colourStr[2]);
-  Serial.println(int(colourArray[2]));
-#endif
 }
 
 void determine_color(int current_task)
@@ -448,12 +659,10 @@ void stop_moving(MeDCMotor *leftMotor, MeDCMotor *rightMotor)
 
 void setBalance()
 {
-// set white balance
-#if PRINT
+  // set white balance
   Serial.println("Put White Sample For Calibration ...");
-#endif
   delay(5000); // delay for five seconds for getting sample ready
-  digitalWrite(LED, HIGH);
+  digitalWrite(LED, LOW);
   // scan the white sample.
   // go through one colour at a time, set the maximum reading for each colour -- red, green and blue to the white array
   digitalWrite(PIN_A, HIGH); // on red light
@@ -477,7 +686,7 @@ void setBalance()
   digitalWrite(PIN_A, LOW);
   digitalWrite(PIN_B, LOW);
   delay(RGBWait);
-#if PRINT
+
   for (int i = 0; i <= 2; i++)
   {
     Serial.print(whiteArray[i]);
@@ -487,7 +696,6 @@ void setBalance()
   // done scanning white, time for the black sample.
   // set black balance
   Serial.println("Put Black Sample For Calibration ...");
-#endif
   delay(5000); // delay for five seconds for getting sample ready
   // go through one colour at a time, set the minimum reading for red, green and blue to the black array
   digitalWrite(PIN_A, HIGH); // on red light
@@ -511,7 +719,6 @@ void setBalance()
   digitalWrite(PIN_A, LOW);
   digitalWrite(PIN_B, LOW);
   delay(RGBWait);
-#if PRINT
   for (int i = 0; i <= 2; i++)
   {
     Serial.print(blackArray[i]);
@@ -521,7 +728,6 @@ void setBalance()
   Serial.println("Computing grey...");
   // delay before starting program
   Serial.println("Ready to begin run");
-#endif
   delay(2000);
 }
 
@@ -562,7 +768,7 @@ void gradualSpeed(MeDCMotor *leftMotor, MeDCMotor *rightMotor, int targetSpeed, 
     }
     else
     {
-      rightMotor->run(currentSpeed * RIGHT_MOTOR_BIAS_FOR_STRAIGHT);
+      rightMotor->run(currentSpeed * MOTOR_BIAS_MORE_RIGHT);
       leftMotor->run(-currentSpeed * LEFT_MOTOR_BIAS);
     }
     delayMicroseconds(stepDelay);
@@ -651,7 +857,7 @@ void differentialSteer(MeDCMotor *leftMotor, MeDCMotor *rightMotor, double motor
 
 float receiveUltrasonic() // in cm
 {
-  long duration = pulseIn(ULTRASONIC, HIGH, ULTRASONIC_TIMEOUT);
+  long duration = pulseIn(ULTRASONIC, HIGH, TIMEOUT);
   if (duration > 0)
   {
     float distance = (duration / 2.0 / 1000000 * SPEED_OF_SOUND * 100) - 2.0; // 3.5 is the distance from ultrasonic to robot side
