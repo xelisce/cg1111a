@@ -34,9 +34,10 @@ double getDistFromUltrasonic()
     if ((millis() - lastReadUltrasonic) > 10)
     {
         transmitUltrasonic();
-        left = receiveUltrasonic(); // in cm
         lastReadUltrasonic = millis();
+        return receiveUltrasonic(); // in cm
     }
+    return left;
 }
 
 void turnOnEmitter()
