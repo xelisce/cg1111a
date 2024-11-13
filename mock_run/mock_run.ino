@@ -51,17 +51,10 @@ enum MovementTypes
   STOP         // 2
 };
 enum MovementTypes movement = WALLTRACK; // default setting where it is moving forward with walltracking
-
-// floats to hold colour arrays
-float colourArray[] = {0, 0, 0};
-float whiteArray[] = {841.00, 915.00, 825.00}; // change this after calibration
-float blackArray[] = {634.00, 553.00, 573.00}; // change this after calibration
-float greyDiff[] = {whiteArray[0] - blackArray[0], whiteArray[1] - blackArray[1], whiteArray[2] - blackArray[2]};
 struct Color
 {
     int r, g, b;
 };
-Color currentColor = {0, 0, 0};
 
 void setup()
 {
@@ -112,7 +105,7 @@ void loop()
   {
     stop_moving();
     read_color();
-    int current_task = closestColor(currentColor);
+    int current_task = closestColor();
     do_color(current_task);
   }
   else if (movement == STOP)

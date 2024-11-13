@@ -1,10 +1,10 @@
+// floats to hold colour arrays
+float colourArray[] = {0, 0, 0};
+float whiteArray[] = {841.00, 915.00, 825.00}; // change this after calibration
+float blackArray[] = {634.00, 553.00, 573.00}; // change this after calibration
+float greyDiff[] = {whiteArray[0] - blackArray[0], whiteArray[1] - blackArray[1], whiteArray[2] - blackArray[2]};
 char RGBColourStr[3][5] = {"R = ", "G = ", "B = "};
-
-// Function to compute the Euclidean distance between two colors
-float euclideanDistance(const Color &c1, const Color &c2)
-{
-    return sqrt(pow(c2.r - c1.r, 2) + pow(c2.g - c1.g, 2) + pow(c2.b - c1.b, 2));
-}
+Color currentColor = {0, 0, 0};
 
 // Function to find the closest predefined color (returns an integer code for the color)
 Color red = {273, 100, 82};
@@ -16,7 +16,13 @@ Color white = {283, 257, 264};
 Color colors[6] = {red, orange, blue, green, pink, white}; // array of predefined colors
 char sensedRGBColourStr[6][8] = {"    RED", " ORANGE", "   BLUE", "  GREEN", "   PINK", "  WHITE"};
 
-int closestColor(const Color &inputColor)
+// Function to compute the Euclidean distance between two colors
+float euclideanDistance(const Color &c1, const Color &c2)
+{
+    return sqrt(pow(c2.r - c1.r, 2) + pow(c2.g - c1.g, 2) + pow(c2.b - c1.b, 2));
+}
+
+int closestColor()
 {
     // Define RGB values for the predefined colors
     int closestColorIndex = 0;                                    // index of the closest color
