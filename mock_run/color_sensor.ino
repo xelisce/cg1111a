@@ -4,7 +4,6 @@ float whiteArray[] = {841.00, 915.00, 825.00}; // change this after calibration
 float blackArray[] = {634.00, 553.00, 573.00}; // change this after calibration
 float greyDiff[] = {whiteArray[0] - blackArray[0], whiteArray[1] - blackArray[1], whiteArray[2] - blackArray[2]};
 char RGBColourStr[3][5] = {"R = ", "G = ", "B = "};
-Color currentColor = {0, 0, 0};
 
 // Function to find the closest predefined color (returns an integer code for the color)
 Color red = {273, 100, 82};
@@ -26,11 +25,11 @@ int closestColor()
 {
     // Define RGB values for the predefined colors
     int closestColorIndex = 0;                                    // index of the closest color
-    float minDistance = euclideanDistance(inputColor, colors[0]); // initial minimum distance, assuming the first color (red) is the closest
+    float minDistance = euclideanDistance(currentColor, colors[0]); // initial minimum distance, assuming the first color (red) is the closest
     // Compare input color with all predefined colors
     for (int i = 1; i < 6; i++)
     {
-        float distance = euclideanDistance(inputColor, colors[i]);
+        float distance = euclideanDistance(currentColor, colors[i]);
         if (distance < minDistance)
         {
             minDistance = distance;

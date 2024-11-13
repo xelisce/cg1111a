@@ -55,6 +55,8 @@ struct Color
 {
     int r, g, b;
 };
+Color currentColor = {0, 0, 0};
+
 
 void setup()
 {
