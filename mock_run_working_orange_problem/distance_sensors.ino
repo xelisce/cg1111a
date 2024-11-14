@@ -61,9 +61,9 @@ double getDistFromIR()
     delay(2);
     int backgroundIR = analogRead(IR_PIN_IN);
     double rawDistance = backgroundIR - currentReading;
-    if (rawDistance > 32)
+    if (rawDistance > 36)
     {
-        return (100.9 * pow(rawDistance, -0.641) + 3); // 3 is for offset
+        return (100.9 * pow(rawDistance, -0.641) + 2); // 3 is for offset
     }
     else
     {

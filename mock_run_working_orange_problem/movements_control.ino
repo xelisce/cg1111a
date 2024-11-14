@@ -4,13 +4,13 @@ double PDController(double reading, bool isRight)
   lastLoopTime = millis();
   if (isRight) // IR
   {
-    currentError = (reading - 10.55);
+    currentError = (reading - 10);
     p = currentError * IRKp;
     d = (currentError / loopInterval) * IRKd;
   }
   else // Ultrasonic
   {
-    currentError = (8.06 - reading);
+    currentError = (8.61 - reading);
     p = currentError * UltrasonicKp;
     d = (currentError / loopInterval) * UltrasonicKd;
   }
@@ -86,18 +86,9 @@ void turnRightBlocking()
 
 void turnOnTheSpotBlocking()
 {
-  if((left-3)>right || left == -1)
-  {
-    gradualSpeed(motorSpeed, 400, true); // accelerate to target speed
-    delay(620); // maintain full speed for the duration of the turn
-    gradualSpeed(0, 400, true, false); // decelerate to stop
-  }
-  else
-  {
-    gradualSpeed(motorSpeed, 400, true, false); // accelerate to target speed
-    delay(620); // maintain full speed for the duration of the turn
-    gradualSpeed(0, 400, true, true); // decelerate to stop
-  }
+  gradualSpeed(motorSpeed, 400, true); // accelerate to target speed
+  delay(620); // maintain full speed for the duration of the turn
+  gradualSpeed(0, 400, true, false); // decelerate to stop
 }
 
 void moveStraightBlocking(int time)

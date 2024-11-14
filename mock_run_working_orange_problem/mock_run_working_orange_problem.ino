@@ -12,7 +12,7 @@
 #define TURNING_TIME 375                   // in milliseconds
 #define LEFT_MOTOR_BIAS 1                  // from 0 to 1, multiplied to motor, because robot doesn't move straight
 #define RIGHT_MOTOR_BIAS 0.75              // from 0 to 1, multiplied to motor, because robot doesn't move straight
-#define RIGHT_MOTOR_BIAS_FOR_STRAIGHT 0.77 // from 0 to 1, for moving straight only, no turns
+#define RIGHT_MOTOR_BIAS_FOR_STRAIGHT 0.80 // from 0 to 1, for moving straight only, no turns
 
 // pins!
 #define ULTRASONIC 12
@@ -33,9 +33,9 @@ MeBuzzer buzzer;
 uint8_t motorSpeed = 255;
 double currentError = 0, // differential steer variables
        rotation = 0;
-double IRKp = 0.08, // PD variables
+double IRKp = 0.10, // PD variables
        IRKd = 0,
-       UltrasonicKp = 0.08,
+       UltrasonicKp = 0.10, // 0.08
        UltrasonicKd = 0,
        p = 0,
        d = 0;
