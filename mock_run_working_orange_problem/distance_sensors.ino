@@ -75,32 +75,34 @@ double getDistFromIR() {
         // Add 2 cm to account for the offset distance from the sensor to the robot side.
     }
     else { // If the signal is too weak or unreliable, suggesting there is no valid object detection:
-        return -1;  // Return -1 if the signal difference is too small to be meaningful.
+        return -1; // Return -1 to signal that the sensor did not detect a meaningful distance.
     }
 }
 
 double getRotation()
 {
-    // computing steer rate with PD controller
-    if (left == -1 && right == -1) // both out of range
+    // Calculates the rotation needed to steer the robot using a PD controller.
+    if (left == -1 && right == -1) // If both sensors are out of range:
     {
         digitalWrite(LED, LOW);
-        rotation = 0;
+        rotation = 0; // Move straight.
     }
-    else if (right == -1 || (left < right && left > 0) || !(right > 0)) // right out of bounds or invalid, or left is closer
+    else if (right == -1 || (left < right && left > 0) || !(right > 0)) {
+    // If the right sensor is out of range, or if the left sensor detects a closer object, or right is invalid:
+        
+        digitalWrite(LED, LOW); // Turn off the LED.
+        rotation = PDController(left, false); // Use the (Ultrasonic)left sensor for wall tracking.
+    }
+    else if (left == -1 || (right < left && right > 0) || !(left > 0)) {
+    // If the left sensor is out of range, or if the right sensor detects a closer object, or left is invalid:
+        
+        digitalWrite(LED, HIGH); // Turn on LED (indicating IR tracking mode).
+        rotation = PDController(right, true); // Use the (IR)right sensorfor wall tracking.
+    }
+    else // If both sensors detect objects at the same distance:
     {
         digitalWrite(LED, LOW);
-        rotation = PDController(left, false); // use left to wall track
-    }
-    else if (left == -1 || (right < left && right > 0) || !(left > 0)) // left out of bounds or invalid, or right is closer
-    {
-        digitalWrite(LED, HIGH);              // turn on LED when IR tracking
-        rotation = PDController(right, true); // use right to wall track
-    }
-    else // both same value
-    {
-        digitalWrite(LED, LOW);
-        rotation = 0;
+        rotation = 0; // Move straight.
     }
     return rotation;
 }
