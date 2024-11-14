@@ -8,7 +8,8 @@ void transmitUltrasonic() {
     digitalWrite(ULTRASONIC, LOW);
 }
 
-float receiveUltrasonic() { // Returns distance in cm.
+float receiveUltrasonic()  // Returns distance in cm.
+{
     // Measures the time it takes for the ultrasonic pulse to return as an echo.
     long duration = pulseIn(ULTRASONIC, HIGH, ULTRASONIC_TIMEOUT); // Measure pulse duration in microseconds.
     if (duration > 0) { // If a pulse is received within the timeout period:
@@ -32,31 +33,31 @@ float receiveUltrasonic() { // Returns distance in cm.
     }
 }
 
-double getDistFromUltrasonic() {
-    
-    if ((millis() - lastReadUltrasonic) > 10)
+double getDistFromUltrasonic() // Returns current distance reading (in cm) from the ultrasonic sensor at appropriate invervals
+{
+    if ((millis() - lastReadUltrasonic) > 10) // If 10 milliseconds or more have passed since the last reading:
     {
-        transmitUltrasonic();
-        lastReadUltrasonic = millis();
-        return receiveUltrasonic(); // in cm
+        transmitUltrasonic(); // Sends a new ultrasonic pulse.
+        lastReadUltrasonic = millis(); // Updates the timestamp.
+        return receiveUltrasonic(); // Returns the new distance.
     }
-    return left;
+    return left; //If less than 10 milliseconds have passed: Returns the previously recorded distance without sending a new pulse.
 }
 
-void turnOnEmitter()
+void turnOnEmitter() // Turns on the IR emitter by setting both control pins to LOW.
 {
     digitalWrite(PIN_A, LOW);
     digitalWrite(PIN_B, LOW);
 }
 
-void turnOffEmitter()
+void turnOffEmitter() // Turns off the IR emitter by setting one control pin HIGH.
 {
     digitalWrite(PIN_A, HIGH);
     digitalWrite(PIN_B, LOW);
 }
 
-double getDistFromIR() {
-    // Measures the distance using an infrared sensor.
+double getDistFromIR() // Measures the distance using the IR sensor.
+{
     turnOnEmitter();
     delay(2);
     int currentReading = analogRead(IR_PIN_IN); // Read the IR sensor value with the emitter on. 
@@ -79,9 +80,8 @@ double getDistFromIR() {
     }
 }
 
-double getRotation()
+double getRotation() // Calculates the rotation needed to steer the robot using a PD controller.
 {
-    // Calculates the rotation needed to steer the robot using a PD controller.
     if (left == -1 && right == -1) // If both sensors are out of range:
     {
         digitalWrite(LED, LOW);
