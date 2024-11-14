@@ -1,6 +1,6 @@
 
-void transmitUltrasonic()
-{
+void transmitUltrasonic() {
+    // Sends an ultrasonic pulse from the sensor to measure distance.
     digitalWrite(ULTRASONIC, LOW);
     delayMicroseconds(2);
     digitalWrite(ULTRASONIC, HIGH);
@@ -8,24 +8,27 @@ void transmitUltrasonic()
     digitalWrite(ULTRASONIC, LOW);
 }
 
-float receiveUltrasonic() // in cm
-{
-    long duration = pulseIn(ULTRASONIC, HIGH, ULTRASONIC_TIMEOUT);
-    if (duration > 0)
-    {
-        float distance = (duration / 2.0 / 1000000 * SPEED_OF_SOUND * 100) - 2.0; // 2.0 is the distance from ultrasonic to robot side
-#if PRINT
+float receiveUltrasonic() { // Returns distance in cm.
+    // Measures the time it takes for the ultrasonic pulse to return as an echo.
+    long duration = pulseIn(ULTRASONIC, HIGH, ULTRASONIC_TIMEOUT); // Measure pulse duration in microseconds.
+    if (duration > 0) { // If a pulse is received within the timeout period:
+        float distance = (duration / 2.0 / 1000000 * SPEED_OF_SOUND * 100) - 2.0; 
+        // Calculate the distance in cm: 
+        // 1. Divide duration by 2 (echo time).
+        // 2. Convert microseconds to seconds (divide by 1,000,000).
+        // 3. Multiply by the speed of sound in cm/s (SPEED_OF_SOUND * 100).
+        // 4. Subtract 2.0 cm to account for the offset distance from the sensor to the robot side.
+//#if PRINT
         // Serial.print("distance(cm) = ");
         // Serial.println(distance);
-#endif
-        return min(distance, 14);
-    }
-    else
-    {
-#if PRINT
+//#endif
+//        return min(distance, 14);
+//    }
+    else { // If no pulse is received within the timeout period:
+//#if PRINT
         // Serial.println("out of range");
-#endif
-        return -1;
+//#endif
+        return -1;  // Return -1 to indicate that the object is out of range.
     }
 }
 
