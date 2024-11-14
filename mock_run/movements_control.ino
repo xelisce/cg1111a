@@ -6,13 +6,13 @@ double PDController(double reading, bool isRight)
   {
     currentError = (reading - 10.55);
     p = currentError * IRKp;
-    d = (currentError / loopInterval) * IRKd;
+    //d = (currentError / loopInterval) * IRKd;
   }
   else // Ultrasonic
   {
     currentError = (8.06 - reading);
     p = currentError * UltrasonicKp;
-    d = (currentError / loopInterval) * UltrasonicKd;
+    //d = (currentError / loopInterval) * UltrasonicKd;
   }
   return p + d;
 }
