@@ -13,7 +13,7 @@ float receiveUltrasonic() // in cm
     long duration = pulseIn(ULTRASONIC, HIGH, ULTRASONIC_TIMEOUT);
     if (duration > 0)
     {
-        float distance = (duration / 2.0 / 1000000 * SPEED_OF_SOUND * 100) - 2.0; // 3.5 is the distance from ultrasonic to robot side
+        float distance = (duration / 2.0 / 1000000 * SPEED_OF_SOUND * 100) - 2.0; // 2.0 is the distance from ultrasonic to robot side
 #if PRINT
         // Serial.print("distance(cm) = ");
         // Serial.println(distance);
