@@ -70,53 +70,53 @@ void gradualSpeed(int targetSpeed, int stepDelay, bool isTurn, bool isRightTurn 
   }
 }
 
-void turnLeftBlocking()
+void turnLeft()
 {
   gradualSpeed(motorSpeed, 400, true, false); // accelerate to target speed
   delay(330); // maintain full speed for the duration of the turn
   gradualSpeed(0, 400, true, false); // decelerate to stop
 }
 
-void turnRightBlocking()
+void turnRight()
 {
   gradualSpeed(motorSpeed, 400, true, true); // accelerate to target speed
   delay(360); // maintain full speed for the duration of the turn
   gradualSpeed(0, 400, true, true); // decelerate to stop
 }
 
-void turnOnTheSpotBlocking()
+void turnOnTheSpot()
 {
   gradualSpeed(motorSpeed, 400, true); // accelerate to target speed
   delay(620); // maintain full speed for the duration of the turn
   gradualSpeed(0, 400, true, false); // decelerate to stop
 }
 
-void moveStraightBlocking(int time)
+void moveStraight(int time)
 {
   gradualSpeed(motorSpeed, 400, false); // accelerate to target speed
   delay(time); // maintain full speed for the specified duration
   gradualSpeed(0, 400, false); // decelerate to stop
 }
 
-void turnLeftUTurnBlocking()
+void turnLeftUTurn()
 {
-  turnLeftBlocking();
-  moveStraightBlocking(770);
-  turnLeftBlocking();
+  turnLeft();
+  moveStraight(770);
+  turnLeft();
   leftMotor.stop();
   rightMotor.stop();
 }
 
-void turnRightUTurnBlocking()
+void turnRightUTurn()
 {
-  turnRightBlocking();
-  moveStraightBlocking(800);
-  turnRightBlocking();
+  turnRight();
+  moveStraight(800);
+  turnRight();
   leftMotor.stop();
   rightMotor.stop();
 }
 
-void moveStraight()
+void moveStraightTesting()
 {
   rightMotor.run(motorSpeed * RIGHT_MOTOR_BIAS);
   leftMotor.run(-motorSpeed * LEFT_MOTOR_BIAS);

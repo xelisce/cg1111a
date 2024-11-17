@@ -96,32 +96,26 @@ void do_color(int current_task)
     case 5:
         movement = STOP;
         break;
-
     case 4:
-        turnLeftUTurnBlocking();
+        turnLeftUTurn();
         movement = WALLTRACK;
         break;
-
     case 3:
-        turnRightBlocking();
+        turnRight();
         movement = WALLTRACK;
         break;
-
     case 2:
-        turnRightUTurnBlocking();
+        turnRightUTurn();
         movement = WALLTRACK;
         break;
-
     case 1:
-        turnOnTheSpotBlocking();
+        turnOnTheSpot();
         movement = WALLTRACK;
         break;
-
     case 0:
-        turnLeftBlocking();
+        turnLeft();
         movement = WALLTRACK;
         break;
-
     default:
 #if PRINT
         Serial.println("UNKNOWN COLOR");
@@ -193,7 +187,7 @@ void setBalance()
     {
         greyDiff[i] = whiteArray[i] - blackArray[i];
     }
-    
+
     // Printing values so they can be updated and saved in the next run in code
 #if PRINT_CALIBRATION
     Serial.print("WHITE VALUES: ");
