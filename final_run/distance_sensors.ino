@@ -8,18 +8,13 @@ void transmitUltrasonic()
     digitalWrite(ULTRASONIC, LOW);
 }
 
-float receiveUltrasonic() // Returns distance in cm.
+float receiveUltrasonic() 
 {
     // Measures the time it takes for the ultrasonic pulse to return as an echo.
     long duration = pulseIn(ULTRASONIC, HIGH, ULTRASONIC_TIMEOUT); // Measure pulse duration in microseconds.
     if (duration > 0)
     { // If a pulse is received within the timeout period:
         float distance = (duration / 2.0 / 1000000 * SPEED_OF_SOUND * 100) - 2.0;
-        // Calculate the distance in cm:
-        // 1. Divide duration by 2 (echo time).
-        // 2. Convert microseconds to seconds (divide by 1,000,000).
-        // 3. Multiply by the speed of sound in cm/s (SPEED_OF_SOUND * 100).
-        // 4. Subtract 2.0 cm to account for the offset distance from the sensor to the robot side.
 #if PRINT
         Serial.print("Ultrasonic Distance(cm) = ");
         Serial.println(distance);
@@ -36,7 +31,7 @@ float receiveUltrasonic() // Returns distance in cm.
     return -1; // Return -1 to indicate that the object is out of range.
 }
 
-double getDistFromUltrasonic() // Returns current distance reading (in cm) from the ultrasonic sensor at appropriate invervals
+double getDistFromUltrasonic() // Returns current distance reading from the ultrasonic sensor at appropriate invervals
 {
     if ((millis() - lastReadUltrasonic) > 10) // If 10 milliseconds or more have passed since the last reading:
     {
@@ -47,13 +42,13 @@ double getDistFromUltrasonic() // Returns current distance reading (in cm) from 
     return left; // If less than 10 milliseconds have passed: Returns the previously recorded distance without sending a new pulse.
 }
 
-void turnOnEmitter() // Turns on the IR emitter by setting both control pins to LOW.
+void turnOnEmitter() 
 {
     digitalWrite(PIN_A, LOW);
     digitalWrite(PIN_B, LOW);
 }
 
-void turnOffEmitter() // Turns off the IR emitter by setting one control pin HIGH.
+void turnOffEmitter() 
 {
     digitalWrite(PIN_A, HIGH);
     digitalWrite(PIN_B, LOW);
@@ -71,12 +66,11 @@ double getDistFromIR() // Measures the distance using the IR sensor.
     // This measures the ambient IR light present in the environment.
 
     double rawDistance = backgroundIR - currentReading; // Calculate the difference to isolate the signal.
-    // This effectively isolate the reflected IR signal from the noise.
+    
     if (rawDistance > 36) // If the difference is significant enough to be valid:
-    // Suggests that the sensor has detected a valid object reflection.
     {
         return (100.9 * pow(rawDistance, -0.641) + 2); // Convert the signal to distance in cm using a power law.
-        // Add 2 cm to account for the offset distance from the sensor to the robot side.
+      
     }
     else
     {              // If the signal is too weak or unreliable, suggesting there is no valid object detection:
@@ -93,12 +87,12 @@ double getRotation() // Calculates the rotation needed to steer the robot using 
     }
     else if (right == -1 || (left < right && left > 0) || !(right > 0)) // If the right sensor is out of range, or if the left sensor detects a closer object, or right is invalid:
     {
-        digitalWrite(LED, LOW);               // Turn off the LED.
+        digitalWrite(LED, LOW);              
         rotation = PDController(left, false); // Use the (Ultrasonic)left sensor for wall tracking.
     }
     else if (left == -1 || (right < left && right > 0) || !(left > 0)) // If the left sensor is out of range, or if the right sensor detects a closer object, or left is invalid:
     {
-        digitalWrite(LED, HIGH);              // Turn on LED (indicating IR tracking mode).
+        digitalWrite(LED, HIGH);              
         rotation = PDController(right, true); // Use the (IR)right sensor for wall tracking.
     }
     else // If both sensors detect objects at the same distance:
