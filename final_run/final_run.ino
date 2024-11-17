@@ -32,11 +32,11 @@ MeBuzzer buzzer;
 // variables!
 uint8_t motorSpeed = 255;
 double currentError = 0, // differential steer variables
-       rotation = 0;
+    rotation = 0;
 double IRKp = 0.10, // PD variables
-       IRKd = 0,
+    IRKd = 0,
        UltrasonicKp = 0.10, // 0.08
-       UltrasonicKd = 0,
+    UltrasonicKd = 0,
        p = 0,
        d = 0;
 double left = 0,
@@ -53,10 +53,9 @@ enum MovementTypes
 enum MovementTypes movement = WALLTRACK; // default setting where it is moving forward with walltracking
 struct Color
 {
-    int r, g, b;
+  int r, g, b;
 };
 Color currentColor = {0, 0, 0};
-
 
 void setup()
 {
@@ -87,15 +86,15 @@ void loop()
     right = getDistFromIR();
     rotation = getRotation();
     differentialSteer(motorSpeed, rotation); // move the motors with steer rate
-    test_line(); // test for double black
+    test_line();                             // test for double black
 #if PRINT
-    // Serial.print("Loop time: ");
-    // Serial.print(loopInterval);
-    // Serial.print("  Rotation: ");
-    // Serial.print(rotation);
-    // Serial.print("  Error: ");
-    // Serial.println(currentError);
-    Serial.print("Left: ");
+    Serial.print("Loop time: ");
+    Serial.print(loopInterval);
+    Serial.print(" | Rotation: ");
+    Serial.print(rotation);
+    Serial.print(" | Error: ");
+    Serial.print(currentError);
+    Serial.print(" | Left: ");
     Serial.print(left);
     Serial.print(" | Right: ");
     Serial.print(right);

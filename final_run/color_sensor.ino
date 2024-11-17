@@ -24,7 +24,7 @@ float euclideanDistance(const Color &c1, const Color &c2)
 int closestColor()
 {
     // Define RGB values for the predefined colors
-    int closestColorIndex = 0;                                    // index of the closest color
+    int closestColorIndex = 0;                                      // index of the closest color
     float minDistance = euclideanDistance(currentColor, colors[0]); // initial minimum distance, assuming the first color (red) is the closest
     // Compare input color with all predefined colors
     for (int i = 1; i < 6; i++)
@@ -43,103 +43,91 @@ int closestColor()
     return closestColorIndex;
 }
 
+// LED Functions
+void turnOnRed()
+{
+    digitalWrite(PIN_A, HIGH);
+    digitalWrite(PIN_B, LOW);
+}
+void turnOnGreen()
+{
+    digitalWrite(PIN_A, LOW);
+    digitalWrite(PIN_B, HIGH);
+}
+void turnOnBlue()
+{
+    digitalWrite(PIN_A, HIGH);
+    digitalWrite(PIN_B, HIGH);
+};
+void turnOffLED()
+{
+    digitalWrite(PIN_A, LOW);
+    digitalWrite(PIN_B, LOW);
+}
+
+// Array of function pointers
+void (*ledFunctions[])() = {turnOnRed, turnOnGreen, turnOnBlue};
+
 void read_color()
 {
-    // FOR RED
-    digitalWrite(PIN_A, HIGH);
-    digitalWrite(PIN_B, LOW);
-    delay(RGBWait);
-    colourArray[0] = getAvgReading(5);
-    colourArray[0] = ((colourArray[0] - blackArray[0]) / (greyDiff[0])) * 255;
-    digitalWrite(PIN_A, LOW);
-    digitalWrite(PIN_B, LOW);
-    delay(RGBWait);
-    // FOR GREEN
-    digitalWrite(PIN_A, LOW);
-    digitalWrite(PIN_B, HIGH);
-    delay(RGBWait);
-    colourArray[1] = getAvgReading(5);
-    colourArray[1] = ((colourArray[1] - blackArray[1]) / (greyDiff[1])) * 255;
-    digitalWrite(PIN_A, LOW);
-    digitalWrite(PIN_B, LOW);
-    delay(RGBWait);
-    // FOR BLUE
-    digitalWrite(PIN_A, HIGH);
-    digitalWrite(PIN_B, HIGH);
-    delay(RGBWait);
-    colourArray[2] = getAvgReading(5);
-    colourArray[2] = ((colourArray[2] - blackArray[2]) / (greyDiff[2])) * 255;
-    digitalWrite(PIN_A, LOW);
-    digitalWrite(PIN_B, LOW);
-    delay(RGBWait);
+    for (int i = 0; i < 3; i++)
+    {
+        ledFunctions[i]();                                                         // Turn on LED
+        delay(RGBWait);                                                            // Wait for readings to stabilise
+        colourArray[i] = getAvgReading(5);                                         // Get average reading for reliability
+        colourArray[i] = ((colourArray[i] - blackArray[i]) / (greyDiff[i])) * 255; // Normalise readings
+        turnOffLED();
+        delay(RGBWait); // Wait before turning on next LED
+#if PRINT
+        Serial.print(RGBColourStr[0]);
+        Serial.println(int(colourArray[0]));
+#endif
+    }
+    // Converting to struct for easy code readability afterwards
     currentColor.r = colourArray[0];
     currentColor.g = colourArray[1];
     currentColor.b = colourArray[2];
-#if PRINT
-    Serial.print(RGBColourStr[0]);
-    Serial.println(int(colourArray[0]));
-    Serial.print(RGBColourStr[1]);
-    Serial.println(int(colourArray[1]));
-    Serial.print(RGBColourStr[2]);
-    Serial.println(int(colourArray[2]));
-#endif
 }
 
 void do_color(int current_task)
 {
-    if (current_task == 5)
+    switch (current_task)
     {
-#if PRINT
-        Serial.println("WHITE");
-#endif
+    case 5:
         movement = STOP;
-    }
-    else if (current_task == 4)
-    {
-#if PRINT
-        Serial.println("PINK");
-#endif
+        break;
+
+    case 4:
         turnLeftUTurnBlocking();
         movement = WALLTRACK;
-    }
-    else if (current_task == 0)
-    {
-#if PRINT
-        Serial.println("RED");
-#endif
-        turnLeftBlocking();
-        movement = WALLTRACK;
-    }
-    else if (current_task == 3)
-    {
-#if PRINT
-        Serial.println("GREEN");
-#endif
+        break;
+
+    case 3:
         turnRightBlocking();
         movement = WALLTRACK;
-    }
-    else if (current_task == 2)
-    {
-#if PRINT
-        Serial.println("BLUE");
-#endif
+        break;
+
+    case 2:
         turnRightUTurnBlocking();
         movement = WALLTRACK;
-    }
-    else if (current_task == 1)
-    {
-#if PRINT
-        Serial.println("ORANGE");
-#endif
+        break;
+
+    case 1:
         turnOnTheSpotBlocking();
         movement = WALLTRACK;
-    }
-    else
-    {
+        break;
+
+    case 0:
+        turnLeftBlocking();
+        movement = WALLTRACK;
+        break;
+
+    default:
 #if PRINT
-        Serial.print("UNKNOWN");
+        Serial.println("UNKNOWN COLOR");
 #endif
         movement = WALLTRACK;
+        break;
     }
 }
 
@@ -161,90 +149,76 @@ int getAvgReading(int times)
 
 void setBalance()
 {
-// set white balance
+// Set white balance
 #if PRINT_CALIBRATION
     Serial.println("Put White Sample For Calibration ...");
 #endif
-    delay(5000); // delay for five seconds for getting sample ready
-    digitalWrite(LED, HIGH);
-    // scan the white sample.
-    // go through one colour at a time, set the maximum reading for each colour -- red, green and blue to the white array
-    digitalWrite(PIN_A, HIGH); // on red light
-    digitalWrite(PIN_B, LOW);
-    delay(RGBWait);
-    whiteArray[0] = getAvgReading(5);
-    digitalWrite(PIN_A, LOW);
-    digitalWrite(PIN_B, LOW);
-    delay(RGBWait);
-    digitalWrite(PIN_A, LOW); // on green light
-    digitalWrite(PIN_B, HIGH);
-    delay(RGBWait);
-    whiteArray[1] = getAvgReading(5);
-    digitalWrite(PIN_A, LOW);
-    digitalWrite(PIN_B, LOW);
-    delay(RGBWait);
-    digitalWrite(PIN_A, HIGH); // on blue light
-    digitalWrite(PIN_B, HIGH);
-    delay(RGBWait);
-    whiteArray[2] = getAvgReading(5);
-    digitalWrite(PIN_A, LOW);
-    digitalWrite(PIN_B, LOW);
-    delay(RGBWait);
+
+    delay(5000);             // Delay for five seconds for getting sample ready
+    digitalWrite(LED, HIGH); // Turn on visual LED
+    // Scan the white sample.
+    // Go through one colour at a time, set the maximum reading for each colour -- red, green and blue to the white array
+    for (int i = 0; i < 3; i++)
+    {
+        ledFunctions[i]();                // Turn on the respective LED
+        delay(RGBWait);                   // Wait for readings to stabilise
+        whiteArray[i] = getAvgReading(5); // Get average reading for reliability
+        turnOffLED();
+        delay(RGBWait); // Wait before turning on next LED
+    }
+    digitalWrite(LED, LOW); // Turn off visual LED on the top of robot, so that the user knows to change the paper
+
+// Set black balance
 #if PRINT_CALIBRATION
+    // Finished scanning white values, now put black sample for calibration
+    Serial.println("Put Black Sample For Calibration ...");
+#endif
+
+    delay(5000);             // Delay for five seconds for getting sample ready
+    digitalWrite(LED, HIGH); // Turn on visual LED
+    // Scan the black sample.
+    // Go through one colour at a time, set the minimum reading for red, green and blue to the black array
+    for (int i = 0; i < 3; i++)
+    {
+        ledFunctions[i]();                // Turn on the respective LED
+        delay(RGBWait);                   // Wait for readings to stabilise
+        blackArray[i] = getAvgReading(5); // Get average reading for reliability
+        turnOffLED();
+        delay(RGBWait); // Wait before turning on next LED
+    }
+    digitalWrite(LED, LOW); // Turn off visual LED
+
+    // Computing grey difference
+    for (int i = 0; i < 3; i++)
+    {
+        greyDiff[i] = whiteArray[i] - blackArray[i];
+    }
+    
+    // Printing values so they can be updated and saved in the next run in code
+#if PRINT_CALIBRATION
+    Serial.print("WHITE VALUES: ");
     for (int i = 0; i <= 2; i++)
     {
         Serial.print(whiteArray[i]);
         Serial.print(", ");
     }
     Serial.println();
-    // done scanning white, time for the black sample.
-    // set black balance
-    Serial.println("Put Black Sample For Calibration ...");
-#endif
-    delay(5000); // delay for five seconds for getting sample ready
-    // go through one colour at a time, set the minimum reading for red, green and blue to the black array
-    digitalWrite(PIN_A, HIGH); // on red light
-    digitalWrite(PIN_B, LOW);
-    delay(RGBWait);
-    blackArray[0] = getAvgReading(5);
-    digitalWrite(PIN_A, LOW);
-    digitalWrite(PIN_B, LOW);
-    delay(RGBWait);
-    digitalWrite(PIN_A, LOW); // on green light
-    digitalWrite(PIN_B, HIGH);
-    delay(RGBWait);
-    blackArray[1] = getAvgReading(5);
-    digitalWrite(PIN_A, LOW);
-    digitalWrite(PIN_B, LOW);
-    delay(RGBWait);
-    digitalWrite(PIN_A, HIGH); // on blue light
-    digitalWrite(PIN_B, HIGH);
-    delay(RGBWait);
-    blackArray[2] = getAvgReading(5);
-    digitalWrite(PIN_A, LOW);
-    digitalWrite(PIN_B, LOW);
-    delay(RGBWait);
-#if PRINT_CALIBRATION
-    for (int i = 0; i <= 2; i++)
+    Serial.print("BLACK VALUES: ") for (int i = 0; i <= 2; i++)
     {
         Serial.print(blackArray[i]);
         Serial.print(", ");
     }
     Serial.println();
-    Serial.println("Computing grey...");
-#endif
+    Serial.println("GREY DIFFERENCE: ");
     for (int i = 0; i < 3; i++)
     {
-        greyDiff[i] = whiteArray[i] - blackArray[i];
-#if PRINT
         Serial.print(greyDiff[i]);
         Serial.print(", ");
-#endif
     }
-#if PRINT
-    Serial.println();
-    // delay before starting program
-    Serial.println("Ready to begin run");
+    Serial.println("Beginning run in 2 seconds...")
 #endif
+
+    digitalWrite(LED, HIGH);
     delay(2000);
+    digitalWrite(LED, LOW);
 }
