@@ -99,7 +99,7 @@ double getRotation() // Calculates the rotation needed to steer the robot using 
     else if (left == -1 || (right < left && right > 0) || !(left > 0)) // If the left sensor is out of range, or if the right sensor detects a closer object, or left is invalid:
     {
         digitalWrite(LED, HIGH);              // Turn on LED (indicating IR tracking mode).
-        rotation = PDController(right, true); // Use the (IR)right sensorfor wall tracking.
+        rotation = PDController(right, true); // Use the (IR)right sensor for wall tracking.
     }
     else // If both sensors detect objects at the same distance:
     {
