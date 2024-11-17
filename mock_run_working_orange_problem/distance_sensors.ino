@@ -72,7 +72,7 @@ double getDistFromIR() // Measures the distance using the IR sensor.
     if (rawDistance > 36) // If the difference is significant enough to be valid:
     //Suggests that the sensor has detected a valid object reflection.
     {
-        return (100.9 * pow(rawDistance, -0.641) + 2); // Convert the signal to distance in cm using a power law.
+        return (100.9 * pow(rawDistance, -0.641)); // Convert the signal to distance in cm using a power law.
         // Add 2 cm to account for the offset distance from the sensor to the robot side.
     }
     else { // If the signal is too weak or unreliable, suggesting there is no valid object detection:
@@ -87,13 +87,13 @@ double getRotation() // Calculates the rotation needed to steer the robot using 
         digitalWrite(LED, LOW);
         rotation = 0; // Move straight.
     }
-    else if (right == -1 || (left < right && left > 0) || !(right > 0)) {
+    else if (right == -1 || (left < right + 2 && left > 0) || !(right > 0)) {
     // If the right sensor is out of range, or if the left sensor detects a closer object, or right is invalid:
         
         digitalWrite(LED, LOW); // Turn off the LED.
         rotation = PDController(left, false); // Use the (Ultrasonic)left sensor for wall tracking.
     }
-    else if (left == -1 || (right < left && right > 0) || !(left > 0)) {
+    else if (left == -1 || (right + 2 < left && right > 0) || !(left > 0)) {
     // If the left sensor is out of range, or if the right sensor detects a closer object, or left is invalid:
         
         digitalWrite(LED, HIGH); // Turn on LED (indicating IR tracking mode).
