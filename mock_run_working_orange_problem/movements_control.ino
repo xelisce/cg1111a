@@ -4,7 +4,7 @@ double PDController(double reading, bool isRight)
   lastLoopTime = millis();
   if (isRight) // IR
   {
-    currentError = (reading - 10);
+    currentError = (reading - 8);
     p = currentError * IRKp;
     d = (currentError / loopInterval) * IRKd;
   }
