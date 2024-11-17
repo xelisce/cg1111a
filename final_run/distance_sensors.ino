@@ -85,12 +85,12 @@ double getRotation() // Calculates the rotation needed to steer the robot using 
         digitalWrite(LED, LOW);
         rotation = 0; // Move straight.
     }
-    else if (right == -1 || (left < right && left > 0) || !(right > 0)) // If the right sensor is out of range, or if the left sensor detects a closer object, or right is invalid:
+    else if (right == -1 || (left < right + 2 && left > 0) || !(right > 0)) // If the right sensor is out of range, or if the left sensor detects a closer object, or right is invalid:
     {
         digitalWrite(LED, LOW);              
         rotation = PDController(left, false); // Use the (Ultrasonic)left sensor for wall tracking.
     }
-    else if (left == -1 || (right < left && right > 0) || !(left > 0)) // If the left sensor is out of range, or if the right sensor detects a closer object, or left is invalid:
+    else if (left == -1 || (right + 2 < left && right > 0) || !(left > 0)) // If the left sensor is out of range, or if the right sensor detects a closer object, or left is invalid:
     {
         digitalWrite(LED, HIGH);              
         rotation = PDController(right, true); // Use the (IR)right sensor for wall tracking.
