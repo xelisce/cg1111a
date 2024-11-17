@@ -67,9 +67,9 @@ double getDistFromIR() // Measures the distance using the IR sensor.
 
     double rawDistance = backgroundIR - currentReading; // Calculate the difference to isolate the signal.
     
-    if (rawDistance > 36) // If the difference is significant enough to be valid:
+    if (rawDistance > 36) // 36 is from the plotted data and tells the mbot to return the distance sensed if it is less than 10 cm
     {
-        return (100.9 * pow(rawDistance, -0.641) + 2); // Convert the signal to distance in cm using a power law.
+        return (100.9 * pow(rawDistance, -0.641)); // Convert the signal to distance in cm using the equation that fits the plot best.
       
     }
     else
